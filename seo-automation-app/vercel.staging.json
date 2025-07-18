@@ -1,0 +1,60 @@
+{
+  "version": 2,
+  "env": {
+    "NODE_ENV": "staging",
+    "NEXT_PUBLIC_ENVIRONMENT": "staging",
+    "NEXT_PUBLIC_APP_URL": "https://seo-automation-app-staging.vercel.app"
+  },
+  "build": {
+    "env": {
+      "NODE_ENV": "staging"
+    }
+  },
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "maxDuration": 30
+    }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Environment",
+          "value": "staging"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/health",
+      "destination": "/api/health/route"
+    }
+  ],
+  "regions": ["iad1"],
+  "github": {
+    "enabled": true,
+    "autoAlias": false
+  }
+}

@@ -1,0 +1,1 @@
+export class ContextualLinkPlacer {  placeLink(content: string, keyword: string, url: string): string {    // This is a very basic implementation. A real one would use NLP to find optimal placement.    const regex = new RegExp(`\b(${keyword})\b`, 'i');    return content.replace(regex, `<a href="${url}">${keyword}</a>`);  }}

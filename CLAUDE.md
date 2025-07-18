@@ -1,0 +1,15 @@
+## Project Credentials
+
+### API Keys
+- OpenAI API Key: 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
+- Firecrawl API Key: fc-4ba88920f7414c93aadb7f6e8752e6c5
+- Serper.dev API Key: 4ce37b02808e4325e42068eb815b03490a5519e5
+
+### Supabase Credentials
+- Supabase URL: https://xpcbyzcaidfukddqniny.supabase.co
+- Supabase Anon Key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwY2J5emNhaWRmdWtkZHFuaW55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY3OTA1MzYsImV4cCI6MjA2MjM2NjUzNn0.k6gsHXOoRFTc-lYTn3gvH-pB71tXwTVzQF5OFu5mV1A
+- Supabase Service Role Key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwY2J5emNhaWRmdWtkZHFuaW55Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0Njc5MDUzNywiZXhwIjoyMDYyMzY2NTM3fQ.rcH_G_p6zeqz1LPhGvJIDDnKwu7bXjY7qqBFMw9ZTC4
+- Supabase Secret: unqhUt/zHacG7pikBxYBQSpoGqGrQe/sHNZwkqMhCr+0QlJALP7yiK2PZVREsGRL6RC4lSJXXZFnTeRNEImtDg==
+
+### Database Connection
+- PostgreSQL Connection String: postgresql://postgres:[Neerfit1@]@db.xpcbyzcaidfukddqniny.supabase.co:5432/postgres

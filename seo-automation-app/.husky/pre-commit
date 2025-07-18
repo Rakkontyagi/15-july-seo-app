@@ -1,0 +1,33 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running pre-commit checks..."
+
+# Run lint-staged for staged files
+npx lint-staged
+
+# Run type checking
+echo "🔧 Running TypeScript type checking..."
+npx tsc --noEmit
+
+# Run tests related to staged files
+echo "🧪 Running tests for staged files..."
+npm run test:staged
+
+# Check for TODO/FIXME comments in staged files
+echo "📝 Checking for TODO/FIXME comments..."
+git diff --cached --name-only | xargs grep -l "TODO\|FIXME" 2>/dev/null && echo "⚠️  Warning: TODO/FIXME comments found in staged files" || echo "✅ No TODO/FIXME comments found"
+
+# Check for console.log statements (except console.warn and console.error)
+echo "🚫 Checking for console.log statements..."
+git diff --cached --name-only | grep -E '\.(js|jsx|ts|tsx)$' | xargs grep -l "console\.log" 2>/dev/null && echo "❌ Error: console.log statements found in staged files" && exit 1 || echo "✅ No console.log statements found"
+
+# Check for debugger statements
+echo "🐛 Checking for debugger statements..."
+git diff --cached --name-only | grep -E '\.(js|jsx|ts|tsx)$' | xargs grep -l "debugger" 2>/dev/null && echo "❌ Error: debugger statements found in staged files" && exit 1 || echo "✅ No debugger statements found"
+
+# Check for merge conflict markers
+echo "🔀 Checking for merge conflict markers..."
+git diff --cached --name-only | xargs grep -l "<<<<<<< HEAD\|>>>>>>> \|=======" 2>/dev/null && echo "❌ Error: Merge conflict markers found in staged files" && exit 1 || echo "✅ No merge conflict markers found"
+
+echo "✅ Pre-commit checks completed successfully!"

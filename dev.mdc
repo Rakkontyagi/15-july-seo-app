@@ -1,0 +1,1448 @@
+# SEO Content Generation System - Development Guide
+
+## Table of Contents
+1. [Project Overview](#project-overview)
+2. [Development Environment Setup](#development-environment-setup)
+3. [Implementation Roadmap](#implementation-roadmap)
+4. [Coding Standards](#coding-standards)
+5. [Architecture Implementation](#architecture-implementation)
+6. [API Development](#api-development)
+7. [Frontend Development](#frontend-development)
+8. [Testing Strategy](#testing-strategy)
+9. [Deployment Guide](#deployment-guide)
+10. [Performance Optimization](#performance-optimization)
+11. [Security Implementation](#security-implementation)
+12. [Monitoring & Debugging](#monitoring-debugging)
+
+## 1. Project Overview
+
+### System Description
+An AI-powered SaaS platform that automatically generates SEO-optimized content by analyzing top-ranking competitors. The system scrapes and analyzes the top 5 Google search results, extracts comprehensive SEO metrics, and generates expert-level content that matches or exceeds competitor performance.
+
+### Key Features
+- **Automated SERP Analysis**: Multi-region Google search analysis
+- **Competitor Content Extraction**: Advanced web scraping with Firecrawl
+- **AI Content Generation**: GPT-4+ powered content with E-E-A-T optimization
+- **Real-time Progress Tracking**: Live updates via Supabase subscriptions
+- **Multi-tenant Architecture**: Subscription-based access control
+- **CMS Integration**: Direct publishing to WordPress, Shopify, etc.
+
+### Technology Stack Summary
+- **Frontend**: Next.js 14+, React 18, TypeScript, Tailwind CSS v4
+- **Backend**: Supabase (PostgreSQL, Auth, Realtime), Vercel Functions
+- **AI/ML**: OpenAI GPT-4+, Google NLP API
+- **External APIs**: Serper.dev, Firecrawl, Stripe
+- **Monitoring**: Sentry, Vercel Analytics
+
+## 2. Development Environment Setup
+
+### Prerequisites
+```bash
+# Required Software
+- Node.js 18+ (LTS)
+- npm 9+ or yarn 1.22+
+- Git 2.30+
+- Docker Desktop (for local development)
+- VS Code (recommended IDE)
+
+# Required Accounts
+- GitHub account
+- Vercel account
+- Supabase account
+- OpenAI API access
+- Serper.dev API access
+- Firecrawl API access
+- Stripe account (for payments)
+- Sentry account (for monitoring)
+```
+
+### Initial Setup
+
+#### 1. Clone Repository
+```bash
+git clone https://github.com/your-org/seo-content-generator.git
+cd seo-content-generator
+```
+
+#### 2. Install Dependencies
+```bash
+# Install root dependencies
+npm install
+
+# Install husky for git hooks
+npm run prepare
+```
+
+#### 3. Environment Configuration
+Create `.env.local` file in root directory:
+```env
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# OpenAI
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_ORG_ID=your_openai_org_id
+
+# SERP Analysis
+SERPER_API_KEY=your_serper_api_key
+SERPAPI_API_KEY=your_serpapi_backup_key
+
+# Content Scraping
+FIRECRAWL_API_KEY=your_firecrawl_api_key
+SCRAPINGBEE_API_KEY=your_scrapingbee_backup_key
+
+# Stripe
+STRIPE_SECRET_KEY=your_stripe_secret_key
+STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
+
+# Monitoring
+SENTRY_DSN=your_sentry_dsn
+NEXT_PUBLIC_SENTRY_DSN=your_public_sentry_dsn
+
+# App Configuration
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NODE_ENV=development
+```
+
+#### 4. Database Setup
+```bash
+# Install Supabase CLI
+npm install -g supabase
+
+# Initialize Supabase locally
+supabase init
+
+# Start local Supabase
+supabase start
+
+# Run migrations
+supabase db push
+```
+
+#### 5. VS Code Extensions
+Install recommended extensions:
+```json
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "bradlc.vscode-tailwindcss",
+    "prisma.prisma",
+    "ms-vscode.vscode-typescript-next",
+    "formulahendry.auto-rename-tag",
+    "christian-kohler.path-intellisense"
+  ]
+}
+```
+
+## 3. Implementation Roadmap
+
+### Phase 1: Foundation (Weeks 1-2)
+```
+Epic 1: Core Infrastructure
+├── Project Setup & Configuration
+├── Supabase Integration
+│   ├── Database Schema
+│   ├── Authentication Setup
+│   └── RLS Policies
+├── Basic UI Framework
+│   ├── Layout Components
+│   ├── Navigation
+│   └── Auth Pages
+└── Development Tooling
+    ├── ESLint & Prettier
+    ├── TypeScript Config
+    └── Git Hooks
+```
+
+### Phase 2: Core Features (Weeks 3-4)
+```
+Epic 2: Web Scraping & Analysis
+├── SERP Analysis Service
+│   ├── Serper.dev Integration
+│   ├── Fallback Providers
+│   └── Result Processing
+├── Content Scraping
+│   ├── Firecrawl Integration
+│   ├── Content Extraction
+│   └── Metric Analysis
+└── Data Storage
+    ├── Caching Layer
+    └── Analysis Results
+```
+
+### Phase 3: AI Integration (Weeks 5-6)
+```
+Epic 3: Content Generation
+├── OpenAI Integration
+│   ├── Prompt Engineering
+│   ├── Content Generation
+│   └── Quality Validation
+├── NLP Processing
+│   ├── LSI Extraction
+│   ├── Entity Recognition
+│   └── Keyword Analysis
+└── Content Optimization
+    ├── E-E-A-T Integration
+    └── Anti-Detection
+```
+
+### Phase 4: User Experience (Weeks 7-8)
+```
+Epic 4: UI/UX Implementation
+├── Content Generation Flow
+│   ├── Keyword Input
+│   ├── Progress Tracking
+│   └── Real-time Updates
+├── Content Editor
+│   ├── Rich Text Editor
+│   ├── SEO Scoring
+│   └── Export Options
+└── Project Management
+    ├── Content Library
+    └── Analytics Dashboard
+```
+
+### Phase 5: Advanced Features (Weeks 9-10)
+```
+Epic 5: SEO Optimization
+├── Internal Linking
+├── Schema Generation
+├── CMS Integration
+└── Performance Analytics
+```
+
+### Phase 6: Production Ready (Weeks 11-12)
+```
+Epic 6: Deployment & Monitoring
+├── Production Setup
+├── Monitoring Integration
+├── Performance Testing
+└── Security Hardening
+```
+
+## 4. Coding Standards
+
+### TypeScript Configuration
+```typescript
+// tsconfig.json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": false,
+    "skipLibCheck": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/components/*": ["./src/components/*"],
+      "@/lib/*": ["./src/lib/*"],
+      "@/hooks/*": ["./src/hooks/*"],
+      "@/types/*": ["./src/types/*"]
+    }
+  }
+}
+```
+
+### Code Style Guidelines
+
+#### File Naming
+```
+- Components: PascalCase (e.g., ContentEditor.tsx)
+- Utilities: camelCase (e.g., formatDate.ts)
+- Types: PascalCase with .types.ts (e.g., User.types.ts)
+- Hooks: camelCase with use prefix (e.g., useAuth.ts)
+- API Routes: kebab-case (e.g., generate-content.ts)
+```
+
+#### Component Structure
+```typescript
+// src/components/ContentEditor/ContentEditor.tsx
+import { useState, useCallback } from 'react';
+import { ContentEditorProps } from './ContentEditor.types';
+import styles from './ContentEditor.module.css';
+
+export const ContentEditor: React.FC<ContentEditorProps> = ({
+  initialContent,
+  onSave,
+  onCancel,
+}) => {
+  const [content, setContent] = useState(initialContent);
+  
+  const handleSave = useCallback(async () => {
+    try {
+      await onSave(content);
+    } catch (error) {
+      console.error('Failed to save content:', error);
+    }
+  }, [content, onSave]);
+
+  return (
+    <div className={styles.container}>
+      {/* Component JSX */}
+    </div>
+  );
+};
+```
+
+#### API Route Structure
+```typescript
+// src/app/api/content/generate/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+import { authenticateRequest } from '@/lib/auth';
+import { generateContent } from '@/lib/ai/generator';
+
+const requestSchema = z.object({
+  keyword: z.string().min(1).max(100),
+  location: z.string().min(2).max(50),
+  wordCount: z.number().min(300).max(5000).optional(),
+});
+
+export async function POST(request: NextRequest) {
+  try {
+    // Authentication
+    const user = await authenticateRequest(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Validation
+    const body = await request.json();
+    const validated = requestSchema.parse(body);
+
+    // Process request
+    const content = await generateContent(validated);
+
+    return NextResponse.json({ success: true, data: content });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Invalid input', details: error.errors }, { status: 400 });
+    }
+    
+    console.error('Content generation error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+```
+
+### Git Commit Standards
+```bash
+# Format: <type>(<scope>): <subject>
+
+feat(auth): add social login support
+fix(editor): resolve content save issue
+docs(api): update endpoint documentation
+style(ui): improve button hover states
+refactor(services): optimize SERP analysis
+test(content): add generation unit tests
+chore(deps): update dependencies
+```
+
+## 5. Architecture Implementation
+
+### Service Layer Pattern
+```typescript
+// src/services/serpAnalysis/serpAnalysis.service.ts
+import { SerperProvider } from '@/lib/providers/serper';
+import { SerpApiProvider } from '@/lib/providers/serpapi';
+import { CacheService } from '@/services/cache';
+import { SERPResults, AnalysisOptions } from './serpAnalysis.types';
+
+export class SERPAnalysisService {
+  private primaryProvider: SerperProvider;
+  private backupProvider: SerpApiProvider;
+  private cache: CacheService;
+
+  constructor() {
+    this.primaryProvider = new SerperProvider(process.env.SERPER_API_KEY!);
+    this.backupProvider = new SerpApiProvider(process.env.SERPAPI_API_KEY!);
+    this.cache = new CacheService();
+  }
+
+  async analyzeKeyword(
+    keyword: string,
+    location: string,
+    options?: AnalysisOptions
+  ): Promise<SERPResults> {
+    // Check cache first
+    const cacheKey = `serp:${keyword}:${location}`;
+    const cached = await this.cache.get<SERPResults>(cacheKey);
+    if (cached && !options?.skipCache) {
+      return cached;
+    }
+
+    try {
+      // Primary provider
+      const results = await this.primaryProvider.search(keyword, location);
+      const processed = this.processResults(results);
+      
+      // Cache results
+      await this.cache.set(cacheKey, processed, 3600); // 1 hour TTL
+      
+      return processed;
+    } catch (error) {
+      console.warn('Primary SERP provider failed, using backup:', error);
+      
+      // Fallback to backup provider
+      const results = await this.backupProvider.search(keyword, location);
+      return this.processResults(results);
+    }
+  }
+
+  private processResults(rawResults: any): SERPResults {
+    return {
+      topResults: rawResults.organic.slice(0, 5).map(this.normalizeResult),
+      regionalData: rawResults.localResults || null,
+      relatedQueries: rawResults.relatedSearches || [],
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  private normalizeResult(result: any) {
+    return {
+      position: result.position,
+      title: result.title,
+      url: result.link,
+      snippet: result.snippet,
+      domain: new URL(result.link).hostname,
+    };
+  }
+}
+```
+
+### Repository Pattern
+```typescript
+// src/repositories/content/content.repository.ts
+import { createClient } from '@supabase/supabase-js';
+import { Database } from '@/types/supabase';
+import { GeneratedContent, ContentFilters } from './content.types';
+
+export class ContentRepository {
+  private supabase;
+
+  constructor() {
+    this.supabase = createClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+  }
+
+  async create(content: Omit<GeneratedContent, 'id' | 'created_at'>): Promise<GeneratedContent> {
+    const { data, error } = await this.supabase
+      .from('generated_content')
+      .insert(content)
+      .select()
+      .single();
+
+    if (error) throw new Error(`Failed to create content: ${error.message}`);
+    return data;
+  }
+
+  async findByUser(userId: string, filters?: ContentFilters): Promise<GeneratedContent[]> {
+    let query = this.supabase
+      .from('generated_content')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (filters?.projectId) {
+      query = query.eq('project_id', filters.projectId);
+    }
+
+    if (filters?.keyword) {
+      query = query.ilike('keyword', `%${filters.keyword}%`);
+    }
+
+    const { data, error } = await query;
+    if (error) throw new Error(`Failed to fetch content: ${error.message}`);
+    
+    return data || [];
+  }
+
+  async update(id: string, updates: Partial<GeneratedContent>): Promise<GeneratedContent> {
+    const { data, error } = await this.supabase
+      .from('generated_content')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw new Error(`Failed to update content: ${error.message}`);
+    return data;
+  }
+
+  async delete(id: string): Promise<void> {
+    const { error } = await this.supabase
+      .from('generated_content')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw new Error(`Failed to delete content: ${error.message}`);
+  }
+}
+```
+
+## 6. API Development
+
+### API Route Structure
+```
+src/app/api/
+├── auth/
+│   ├── login/route.ts
+│   ├── logout/route.ts
+│   ├── register/route.ts
+│   └── session/route.ts
+├── content/
+│   ├── generate/route.ts
+│   ├── [id]/route.ts
+│   └── export/route.ts
+├── serp/
+│   ├── analyze/route.ts
+│   └── competitors/route.ts
+├── webhooks/
+│   ├── stripe/route.ts
+│   └── supabase/route.ts
+└── health/route.ts
+```
+
+### API Middleware
+```typescript
+// src/middleware/api.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
+import { rateLimiter } from '@/lib/rate-limiter';
+
+export async function apiMiddleware(request: NextRequest) {
+  // CORS headers
+  const headers = {
+    'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_APP_URL!,
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  };
+
+  // Handle preflight
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { status: 200, headers });
+  }
+
+  // Rate limiting
+  const ip = request.ip || 'anonymous';
+  const rateLimitResult = await rateLimiter.check(ip);
+  
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Rate limit exceeded', retryAfter: rateLimitResult.retryAfter },
+      { status: 429, headers }
+    );
+  }
+
+  // Authentication for protected routes
+  if (request.nextUrl.pathname.startsWith('/api/content') ||
+      request.nextUrl.pathname.startsWith('/api/serp')) {
+    const supabase = createMiddlewareClient({ req: request, res: NextResponse.next() });
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401, headers }
+      );
+    }
+  }
+
+  return NextResponse.next({ headers });
+}
+```
+
+### Error Handling
+```typescript
+// src/lib/errors/api.errors.ts
+export class APIError extends Error {
+  constructor(
+    message: string,
+    public statusCode: number = 500,
+    public code?: string,
+    public details?: any
+  ) {
+    super(message);
+    this.name = 'APIError';
+  }
+}
+
+export class ValidationError extends APIError {
+  constructor(message: string, details?: any) {
+    super(message, 400, 'VALIDATION_ERROR', details);
+  }
+}
+
+export class AuthenticationError extends APIError {
+  constructor(message: string = 'Unauthorized') {
+    super(message, 401, 'AUTHENTICATION_ERROR');
+  }
+}
+
+export class RateLimitError extends APIError {
+  constructor(retryAfter: number) {
+    super('Rate limit exceeded', 429, 'RATE_LIMIT_ERROR', { retryAfter });
+  }
+}
+
+// Global error handler
+export function handleAPIError(error: unknown): NextResponse {
+  console.error('API Error:', error);
+
+  if (error instanceof APIError) {
+    return NextResponse.json(
+      {
+        error: error.message,
+        code: error.code,
+        details: error.details,
+      },
+      { status: error.statusCode }
+    );
+  }
+
+  if (error instanceof z.ZodError) {
+    return NextResponse.json(
+      {
+        error: 'Validation failed',
+        code: 'VALIDATION_ERROR',
+        details: error.errors,
+      },
+      { status: 400 }
+    );
+  }
+
+  // Generic error
+  return NextResponse.json(
+    {
+      error: 'Internal server error',
+      code: 'INTERNAL_ERROR',
+    },
+    { status: 500 }
+  );
+}
+```
+
+## 7. Frontend Development
+
+### Component Library Structure
+```
+src/components/
+├── ui/                    # Base UI components
+│   ├── Button/
+│   ├── Input/
+│   ├── Card/
+│   └── Modal/
+├── forms/                 # Form components
+│   ├── KeywordInput/
+│   ├── LocationSelect/
+│   └── ContentSettings/
+├── content/              # Content-specific
+│   ├── ContentEditor/
+│   ├── SEOScorePanel/
+│   └── ProgressTracker/
+├── layout/               # Layout components
+│   ├── Header/
+│   ├── Sidebar/
+│   └── Footer/
+└── shared/               # Shared components
+    ├── LoadingSpinner/
+    ├── ErrorBoundary/
+    └── Toast/
+```
+
+### State Management
+```typescript
+// src/store/content.store.ts
+import { create } from 'zustand';
+import { devtools, persist } from 'zustand/middleware';
+
+interface ContentState {
+  // State
+  currentProject: string | null;
+  generationProgress: number;
+  isGenerating: boolean;
+  generatedContent: GeneratedContent | null;
+  
+  // Actions
+  setCurrentProject: (projectId: string | null) => void;
+  updateProgress: (progress: number) => void;
+  startGeneration: () => void;
+  completeGeneration: (content: GeneratedContent) => void;
+  resetGeneration: () => void;
+}
+
+export const useContentStore = create<ContentState>()(
+  devtools(
+    persist(
+      (set) => ({
+        // Initial state
+        currentProject: null,
+        generationProgress: 0,
+        isGenerating: false,
+        generatedContent: null,
+        
+        // Actions
+        setCurrentProject: (projectId) => set({ currentProject: projectId }),
+        updateProgress: (progress) => set({ generationProgress: progress }),
+        startGeneration: () => set({ isGenerating: true, generationProgress: 0 }),
+        completeGeneration: (content) => set({ 
+          isGenerating: false, 
+          generationProgress: 100,
+          generatedContent: content 
+        }),
+        resetGeneration: () => set({ 
+          isGenerating: false, 
+          generationProgress: 0,
+          generatedContent: null 
+        }),
+      }),
+      {
+        name: 'content-storage',
+        partialize: (state) => ({ currentProject: state.currentProject }),
+      }
+    )
+  )
+);
+```
+
+### Custom Hooks
+```typescript
+// src/hooks/useContentGeneration.ts
+import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSupabase } from '@/hooks/useSupabase';
+import { useContentStore } from '@/store/content.store';
+import { ContentGenerationService } from '@/services/content';
+import { toast } from '@/components/ui/toast';
+
+export function useContentGeneration() {
+  const router = useRouter();
+  const { user } = useSupabase();
+  const { startGeneration, updateProgress, completeGeneration } = useContentStore();
+  const [error, setError] = useState<string | null>(null);
+  
+  const generateContent = useCallback(async (params: GenerationParams) => {
+    if (!user) {
+      setError('Please login to generate content');
+      return;
+    }
+
+    setError(null);
+    startGeneration();
+
+    try {
+      const service = new ContentGenerationService();
+      
+      // Subscribe to progress updates
+      service.onProgress((progress) => {
+        updateProgress(progress);
+      });
+
+      const content = await service.generate({
+        ...params,
+        userId: user.id,
+      });
+
+      completeGeneration(content);
+      toast.success('Content generated successfully!');
+      
+      // Navigate to editor
+      router.push(`/content/editor/${content.id}`);
+    } catch (error) {
+      console.error('Generation failed:', error);
+      setError(error.message || 'Failed to generate content');
+      toast.error('Content generation failed');
+    }
+  }, [user, startGeneration, updateProgress, completeGeneration, router]);
+
+  return {
+    generateContent,
+    error,
+    isGenerating: useContentStore((state) => state.isGenerating),
+    progress: useContentStore((state) => state.generationProgress),
+  };
+}
+```
+
+### Real-time Updates
+```typescript
+// src/hooks/useRealtimeProgress.ts
+import { useEffect } from 'react';
+import { useSupabase } from '@/hooks/useSupabase';
+import { RealtimeChannel } from '@supabase/supabase-js';
+
+interface ProgressUpdate {
+  stage: string;
+  progress: number;
+  message: string;
+}
+
+export function useRealtimeProgress(
+  contentId: string,
+  onProgress: (update: ProgressUpdate) => void
+) {
+  const { supabase } = useSupabase();
+
+  useEffect(() => {
+    let channel: RealtimeChannel;
+
+    const setupRealtimeSubscription = async () => {
+      channel = supabase
+        .channel(`content-progress:${contentId}`)
+        .on(
+          'broadcast',
+          { event: 'progress' },
+          (payload) => {
+            onProgress(payload.payload as ProgressUpdate);
+          }
+        )
+        .subscribe();
+    };
+
+    setupRealtimeSubscription();
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [contentId, onProgress, supabase]);
+}
+```
+
+## 8. Testing Strategy
+
+### Unit Testing
+```typescript
+// src/services/seo/__tests__/keywordDensity.test.ts
+import { calculateKeywordDensity } from '../keywordDensity';
+
+describe('calculateKeywordDensity', () => {
+  it('should calculate correct density for single keyword', () => {
+    const content = 'SEO is important. Good SEO practices help websites rank better.';
+    const keyword = 'SEO';
+    const density = calculateKeywordDensity(content, keyword);
+    
+    expect(density).toBeCloseTo(18.18, 2); // 2 occurrences / 11 words * 100
+  });
+
+  it('should be case insensitive', () => {
+    const content = 'SEO and seo are the same thing.';
+    const keyword = 'seo';
+    const density = calculateKeywordDensity(content, keyword);
+    
+    expect(density).toBeCloseTo(28.57, 2); // 2 occurrences / 7 words * 100
+  });
+
+  it('should handle empty content', () => {
+    const density = calculateKeywordDensity('', 'keyword');
+    expect(density).toBe(0);
+  });
+});
+```
+
+### Integration Testing
+```typescript
+// src/app/api/content/__tests__/generate.test.ts
+import { createMocks } from 'node-mocks-http';
+import { POST } from '../generate/route';
+import { mockSupabaseClient } from '@/test/mocks/supabase';
+
+jest.mock('@supabase/supabase-js', () => ({
+  createClient: () => mockSupabaseClient,
+}));
+
+describe('POST /api/content/generate', () => {
+  it('should generate content successfully', async () => {
+    const { req } = createMocks({
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer valid-token',
+      },
+      body: {
+        keyword: 'SEO optimization',
+        location: 'United States',
+        wordCount: 1000,
+      },
+    });
+
+    const response = await POST(req as any);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data).toHaveProperty('success', true);
+    expect(data.data).toHaveProperty('content');
+    expect(data.data.wordCount).toBeGreaterThanOrEqual(900);
+    expect(data.data.wordCount).toBeLessThanOrEqual(1100);
+  });
+
+  it('should reject unauthorized requests', async () => {
+    const { req } = createMocks({
+      method: 'POST',
+      body: {
+        keyword: 'SEO optimization',
+        location: 'United States',
+      },
+    });
+
+    const response = await POST(req as any);
+    expect(response.status).toBe(401);
+  });
+});
+```
+
+### E2E Testing
+```typescript
+// e2e/content-generation.spec.ts
+import { test, expect } from '@playwright/test';
+
+test.describe('Content Generation Flow', () => {
+  test.beforeEach(async ({ page }) => {
+    // Login
+    await page.goto('/login');
+    await page.fill('[name="email"]', 'test@example.com');
+    await page.fill('[name="password"]', 'testpassword');
+    await page.click('button[type="submit"]');
+    await page.waitForURL('/dashboard');
+  });
+
+  test('should generate content from dashboard', async ({ page }) => {
+    // Navigate to content generation
+    await page.click('text=Generate Content');
+    
+    // Fill form
+    await page.fill('[name="keyword"]', 'SEO best practices');
+    await page.selectOption('[name="location"]', 'US');
+    await page.click('text=Advanced Settings');
+    await page.fill('[name="wordCount"]', '1500');
+    
+    // Start generation
+    await page.click('button:has-text("Generate")');
+    
+    // Wait for progress
+    await expect(page.locator('[role="progressbar"]')).toBeVisible();
+    
+    // Wait for completion (with timeout)
+    await page.waitForURL(/\/content\/editor\//, { timeout: 300000 });
+    
+    // Verify editor loaded
+    await expect(page.locator('.content-editor')).toBeVisible();
+    await expect(page.locator('.seo-score')).toContainText(/\d+\/100/);
+  });
+});
+```
+
+### Testing Configuration
+```javascript
+// jest.config.js
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  roots: ['<rootDir>/src'],
+  testMatch: ['**/__tests__/**/*.test.ts', '**/__tests__/**/*.test.tsx'],
+  transform: {
+    '^.+\\.tsx?$': 'ts-jest',
+  },
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+  },
+  setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
+  collectCoverageFrom: [
+    'src/**/*.{ts,tsx}',
+    '!src/**/*.d.ts',
+    '!src/**/*.stories.tsx',
+    '!src/test/**/*',
+  ],
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 80,
+      lines: 90,
+      statements: 90,
+    },
+  },
+};
+```
+
+## 9. Deployment Guide
+
+### Pre-deployment Checklist
+```bash
+# 1. Environment Variables
+- [ ] All production environment variables configured
+- [ ] API keys rotated and secured
+- [ ] Database connection strings updated
+
+# 2. Code Quality
+- [ ] All tests passing (npm test)
+- [ ] Linting passes (npm run lint)
+- [ ] Type checking passes (npm run type-check)
+- [ ] Build succeeds (npm run build)
+
+# 3. Security
+- [ ] Dependencies updated (npm audit)
+- [ ] Security headers configured
+- [ ] CORS properly configured
+- [ ] Rate limiting enabled
+
+# 4. Performance
+- [ ] Images optimized
+- [ ] Code splitting implemented
+- [ ] Caching headers set
+- [ ] Database indexes created
+```
+
+### Vercel Deployment
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Login to Vercel
+vercel login
+
+# Deploy to preview
+vercel
+
+# Deploy to production
+vercel --prod
+```
+
+### Database Migrations
+```bash
+# Create migration
+supabase migration new add_content_indexes
+
+# Edit migration file
+# supabase/migrations/[timestamp]_add_content_indexes.sql
+CREATE INDEX idx_content_user_id ON generated_content(user_id);
+CREATE INDEX idx_content_keyword ON generated_content(keyword);
+CREATE INDEX idx_content_created_at ON generated_content(created_at DESC);
+
+# Run migrations
+supabase db push
+```
+
+### CI/CD Pipeline
+```yaml
+# .github/workflows/deploy.yml
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run linter
+        run: npm run lint
+      
+      - name: Run type checking
+        run: npm run type-check
+      
+      - name: Run tests
+        run: npm test -- --coverage
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v20
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+```
+
+## 10. Performance Optimization
+
+### Frontend Optimization
+```typescript
+// next.config.js
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  images: {
+    domains: ['your-cdn.com'],
+    formats: ['image/avif', 'image/webp'],
+  },
+  experimental: {
+    optimizeCss: true,
+  },
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
+  swcMinify: true,
+  compress: true,
+  poweredByHeader: false,
+};
+
+module.exports = nextConfig;
+```
+
+### Code Splitting
+```typescript
+// Dynamic imports for heavy components
+const ContentEditor = dynamic(() => import('@/components/ContentEditor'), {
+  loading: () => <EditorSkeleton />,
+  ssr: false,
+});
+
+const AnalyticsDashboard = dynamic(() => import('@/components/Analytics'), {
+  loading: () => <DashboardSkeleton />,
+});
+```
+
+### API Response Caching
+```typescript
+// src/app/api/serp/analyze/route.ts
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const keyword = searchParams.get('keyword');
+  const location = searchParams.get('location');
+
+  // Set cache headers
+  const headers = {
+    'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+  };
+
+  const data = await analyzeKeyword(keyword, location);
+  
+  return NextResponse.json(data, { headers });
+}
+```
+
+### Database Query Optimization
+```sql
+-- Optimize common queries with indexes
+CREATE INDEX idx_content_search ON generated_content 
+  USING gin(to_tsvector('english', keyword || ' ' || content));
+
+-- Materialized view for analytics
+CREATE MATERIALIZED VIEW user_content_stats AS
+SELECT 
+  user_id,
+  COUNT(*) as total_content,
+  AVG(word_count) as avg_word_count,
+  AVG(quality_score) as avg_quality_score,
+  DATE_TRUNC('day', created_at) as date
+FROM generated_content
+GROUP BY user_id, DATE_TRUNC('day', created_at);
+
+-- Refresh periodically
+CREATE OR REPLACE FUNCTION refresh_user_stats()
+RETURNS void AS $$
+BEGIN
+  REFRESH MATERIALIZED VIEW CONCURRENTLY user_content_stats;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+## 11. Security Implementation
+
+### Input Validation
+```typescript
+// src/lib/validation/content.validation.ts
+import { z } from 'zod';
+import DOMPurify from 'isomorphic-dompurify';
+
+export const contentSchema = z.object({
+  keyword: z
+    .string()
+    .min(1, 'Keyword is required')
+    .max(100, 'Keyword too long')
+    .regex(/^[a-zA-Z0-9\s\-_]+$/, 'Invalid characters in keyword')
+    .transform((val) => DOMPurify.sanitize(val)),
+    
+  location: z
+    .string()
+    .min(2, 'Location is required')
+    .max(50, 'Location too long'),
+    
+  wordCount: z
+    .number()
+    .min(300, 'Minimum 300 words')
+    .max(5000, 'Maximum 5000 words')
+    .optional()
+    .default(1000),
+    
+  tone: z
+    .enum(['professional', 'casual', 'technical', 'academic'])
+    .optional()
+    .default('professional'),
+});
+
+export const sanitizeHTML = (html: string): string => {
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'a'],
+    ALLOWED_ATTR: ['href', 'target', 'rel'],
+  });
+};
+```
+
+### API Security
+```typescript
+// src/middleware/security.ts
+import helmet from 'helmet';
+import { NextRequest, NextResponse } from 'next/server';
+
+export function securityHeaders(request: NextRequest) {
+  const response = NextResponse.next();
+  
+  // Security headers
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';"
+  );
+  response.headers.set(
+    'Permissions-Policy',
+    'camera=(), microphone=(), geolocation=()'
+  );
+  
+  return response;
+}
+```
+
+### Rate Limiting
+```typescript
+// src/lib/rate-limiter.ts
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
+
+export const rateLimiter = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(100, '1 h'),
+  analytics: true,
+});
+
+export const apiRateLimiter = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(10, '1 m'),
+  analytics: true,
+});
+
+export async function checkRateLimit(identifier: string, limiter = rateLimiter) {
+  const { success, limit, reset, remaining } = await limiter.limit(identifier);
+  
+  return {
+    success,
+    limit,
+    reset,
+    remaining,
+    retryAfter: reset - Date.now(),
+  };
+}
+```
+
+## 12. Monitoring & Debugging
+
+### Error Tracking
+```typescript
+// src/lib/monitoring/sentry.ts
+import * as Sentry from '@sentry/nextjs';
+
+export function initSentry() {
+  Sentry.init({
+    dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+    environment: process.env.NODE_ENV,
+    integrations: [
+      new Sentry.BrowserTracing(),
+      new Sentry.Replay(),
+    ],
+    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+    replaysSessionSampleRate: 0.1,
+    replaysOnErrorSampleRate: 1.0,
+    beforeSend(event, hint) {
+      // Filter out sensitive data
+      if (event.request?.cookies) {
+        delete event.request.cookies;
+      }
+      return event;
+    },
+  });
+}
+
+export function captureError(error: Error, context?: any) {
+  console.error('Application error:', error);
+  Sentry.captureException(error, {
+    extra: context,
+  });
+}
+```
+
+### Performance Monitoring
+```typescript
+// src/lib/monitoring/performance.ts
+export class PerformanceTracker {
+  private static marks = new Map<string, number>();
+
+  static start(label: string) {
+    this.marks.set(label, performance.now());
+  }
+
+  static end(label: string, metadata?: any) {
+    const startTime = this.marks.get(label);
+    if (!startTime) {
+      console.warn(`No start mark found for ${label}`);
+      return;
+    }
+
+    const duration = performance.now() - startTime;
+    this.marks.delete(label);
+
+    // Log to console in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Performance: ${label} took ${duration.toFixed(2)}ms`, metadata);
+    }
+
+    // Send to analytics in production
+    if (process.env.NODE_ENV === 'production' && window.gtag) {
+      window.gtag('event', 'timing_complete', {
+        name: label,
+        value: Math.round(duration),
+        event_category: 'Performance',
+        ...metadata,
+      });
+    }
+  }
+}
+```
+
+### Debug Utilities
+```typescript
+// src/lib/debug/logger.ts
+type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+
+class Logger {
+  private isDevelopment = process.env.NODE_ENV === 'development';
+  
+  private log(level: LogLevel, message: string, data?: any) {
+    const timestamp = new Date().toISOString();
+    const logData = {
+      timestamp,
+      level,
+      message,
+      data,
+    };
+
+    if (this.isDevelopment) {
+      console[level](`[${timestamp}] ${message}`, data || '');
+    } else {
+      // Send to logging service in production
+      // e.g., LogRocket, DataDog, etc.
+    }
+  }
+
+  debug(message: string, data?: any) {
+    this.log('debug', message, data);
+  }
+
+  info(message: string, data?: any) {
+    this.log('info', message, data);
+  }
+
+  warn(message: string, data?: any) {
+    this.log('warn', message, data);
+  }
+
+  error(message: string, error?: Error | any) {
+    this.log('error', message, error);
+    if (error instanceof Error) {
+      captureError(error, { message });
+    }
+  }
+}
+
+export const logger = new Logger();
+```
+
+## Development Best Practices
+
+### 1. Code Review Checklist
+- [ ] Code follows TypeScript strict mode
+- [ ] All functions have proper error handling
+- [ ] API responses follow consistent format
+- [ ] Components are properly typed
+- [ ] No console.logs in production code
+- [ ] Tests cover new functionality
+- [ ] Documentation updated
+
+### 2. Performance Checklist
+- [ ] Images optimized and lazy loaded
+- [ ] Components use React.memo where appropriate
+- [ ] API calls are debounced/throttled
+- [ ] Database queries are optimized
+- [ ] Unnecessary re-renders eliminated
+
+### 3. Security Checklist
+- [ ] All inputs validated and sanitized
+- [ ] Authentication checked on protected routes
+- [ ] Sensitive data not exposed in responses
+- [ ] CORS properly configured
+- [ ] Rate limiting implemented
+
+### 4. Accessibility Checklist
+- [ ] ARIA labels on interactive elements
+- [ ] Keyboard navigation works
+- [ ] Color contrast meets WCAG AA
+- [ ] Focus indicators visible
+- [ ] Screen reader tested
+
+## Conclusion
+
+This development guide provides a comprehensive roadmap for building the SEO Content Generation System. Follow the standards and best practices outlined here to ensure a maintainable, scalable, and secure application.
+
+Key takeaways:
+- **Architecture First**: Follow the microservices pattern with clear separation of concerns
+- **Type Safety**: Use TypeScript strictly throughout the application
+- **Test Coverage**: Maintain >90% test coverage for reliability
+- **Security**: Implement defense in depth with multiple security layers
+- **Performance**: Optimize at every level from database to frontend
+- **Monitoring**: Track everything to catch issues before users do
+
+For questions or clarifications, refer to the architecture.md and PRD.md documents or reach out to the technical lead.
