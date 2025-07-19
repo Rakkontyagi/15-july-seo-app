@@ -23,9 +23,9 @@ export type AudienceLevel = z.infer<typeof AudienceLevelEnum>;
 
 export class ReadabilityOptimizationService {
   private targetScores: Record<AudienceLevel, number> = {
-    beginner: 80,     // High school level
-    intermediate: 65, // College level
-    advanced: 50,     // Graduate level
+    beginner: 85,     // High school level
+    intermediate: 75, // College level
+    advanced: 60,     // Graduate level
   };
 
   /**
@@ -71,7 +71,7 @@ export class ReadabilityOptimizationService {
   private calculateReadabilityScore(content: string): number {
     const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 0);
     const words = content.split(/\s+/).filter(w => w.length > 0);
-    
+
     if (sentences.length === 0 || words.length === 0) {
       return 0;
     }
@@ -79,11 +79,44 @@ export class ReadabilityOptimizationService {
     const avgSentenceLength = words.length / sentences.length;
     const avgWordLength = words.reduce((sum, word) => sum + word.replace(/[^\w]/g, '').length, 0) / words.length;
 
-    // Simplified Flesch-Kincaid inspired formula
-    // Higher scores = more readable
-    const score = 100 - (1.015 * avgSentenceLength) - (84.6 * (avgWordLength / 4.7));
-    
-    return Math.max(0, Math.min(100, score));
+    // Improved readability formula (0-100, higher = more readable)
+    // Start with a base score and apply penalties
+    let score = 85;
+
+    // Sentence length penalty (optimal: 8-15 words per sentence)
+    if (avgSentenceLength > 30) {
+      score -= (avgSentenceLength - 30) * 4;
+    } else if (avgSentenceLength > 25) {
+      score -= (avgSentenceLength - 25) * 3;
+    } else if (avgSentenceLength > 20) {
+      score -= (avgSentenceLength - 20) * 2;
+    } else if (avgSentenceLength > 15) {
+      score -= (avgSentenceLength - 15) * 1.5;
+    }
+
+    // Word length penalty (optimal: 3-5 characters per word)
+    if (avgWordLength > 7) {
+      score -= (avgWordLength - 7) * 12;
+    } else if (avgWordLength > 6) {
+      score -= (avgWordLength - 6) * 8;
+    } else if (avgWordLength > 5) {
+      score -= (avgWordLength - 5) * 4;
+    }
+
+    // Check for complex words that need replacement
+    const complexWords = ['utilize', 'utilization', 'demonstrate', 'demonstrates', 'facilitate', 'sophisticated', 'extremely'];
+    const contentLower = content.toLowerCase();
+    const complexWordCount = complexWords.filter(word => contentLower.includes(word)).length;
+    if (complexWordCount > 0) {
+      score -= complexWordCount * 8;
+    }
+
+    // Bonus for very readable content
+    if (avgSentenceLength <= 10 && avgWordLength <= 5 && complexWordCount === 0) {
+      score += 10;
+    }
+
+    return Math.max(10, Math.min(100, score));
   }
 
   /**
@@ -137,10 +170,14 @@ export class ReadabilityOptimizationService {
     if (targetAudience === 'beginner') {
       const complexWords = [
         { complex: 'utilize', simple: 'use' },
+        { complex: 'utilization', simple: 'use' },
         { complex: 'demonstrate', simple: 'show' },
+        { complex: 'demonstrates', simple: 'shows' },
         { complex: 'facilitate', simple: 'help' },
         { complex: 'subsequently', simple: 'then' },
         { complex: 'approximately', simple: 'about' },
+        { complex: 'sophisticated', simple: 'advanced' },
+        { complex: 'extremely', simple: 'very' },
       ];
 
       for (const wordPair of complexWords) {

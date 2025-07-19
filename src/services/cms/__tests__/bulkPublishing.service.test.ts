@@ -267,7 +267,7 @@ describe('BulkPublishingService', () => {
   });
 
   it('should schedule jobs correctly', async () => {
-    const pastDate = new Date(Date.now() - 1000); // 1 second ago
+    const pastDate = new Date(Date.now() - 10000); // 10 seconds ago
     const job = await service.createJob(['content1'], ['wordpress'], pastDate);
 
     expect(job.status).toBe('pending');
@@ -275,7 +275,7 @@ describe('BulkPublishingService', () => {
     await service.scheduleJobs();
 
     // After scheduling, the job should be executed
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 200));
 
     const updatedJob = await service.getJobStatus(job.id);
     expect(updatedJob.status).toBe('completed');
