@@ -18,12 +18,18 @@ export interface User {
   updated_at: string;
 }
 
-// Content project organization
+// Content project organization with client/campaign support
 export interface Project {
   id: string;
   user_id: string;
   name: string;
   description?: string;
+  client_name?: string;
+  campaign_name?: string;
+  category?: string;
+  status: 'active' | 'completed' | 'on_hold' | 'archived';
+  due_date?: string;
+  completion_percentage: number;
   target_keywords: string[];
   target_country: string;
   target_language: string;
@@ -99,6 +105,248 @@ export interface UsageAnalytics {
   created_at: string;
 }
 
+// Project tag system
+export interface ProjectTag {
+  id: string;
+  project_id: string;
+  tag_name: string;
+  tag_color: string;
+  created_at: string;
+}
+
+// Content tag system
+export interface ContentTag {
+  id: string;
+  content_id: string;
+  tag_name: string;
+  tag_color: string;
+  created_at: string;
+}
+
+// Project access control for client sharing
+export interface ProjectAccessControl {
+  id: string;
+  project_id: string;
+  user_id?: string;
+  email?: string;
+  role: 'owner' | 'editor' | 'viewer';
+  permissions: Record<string, any>;
+  invited_by?: string;
+  invited_at: string;
+  accepted_at?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// Content calendar for scheduling
+export interface ContentCalendar {
+  id: string;
+  project_id: string;
+  content_id?: string;
+  title: string;
+  description?: string;
+  scheduled_date: string;
+  status: 'planned' | 'in_progress' | 'published' | 'cancelled';
+  platform?: string;
+  metadata: Record<string, any>;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Project metrics for progress tracking
+export interface ProjectMetrics {
+  id: string;
+  project_id: string;
+  total_content_pieces: number;
+  completed_content_pieces: number;
+  average_seo_score: number;
+  average_word_count: number;
+  last_activity_at?: string;
+  calculated_at: string;
+}
+
+// Content performance tracking
+export interface ContentPerformance {
+  id: string;
+  content_id: string;
+  project_id: string;
+  user_id: string;
+  target_keyword: string;
+  current_rank?: number;
+  previous_rank?: number;
+  rank_change: number;
+  search_engine: string;
+  location: string;
+  organic_traffic: number;
+  organic_clicks: number;
+  impressions: number;
+  ctr: number;
+  average_position?: number;
+  bounce_rate?: number;
+  time_on_page?: number;
+  pages_per_session?: number;
+  conversion_rate?: number;
+  conversions: number;
+  tracking_date: string;
+  data_source: string;
+  metadata: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}
+
+// Keyword ranking history
+export interface KeywordRankingHistory {
+  id: string;
+  content_id?: string;
+  project_id: string;
+  user_id: string;
+  keyword: string;
+  rank_position?: number;
+  search_volume?: number;
+  difficulty_score?: number;
+  search_engine: string;
+  location: string;
+  device: 'desktop' | 'mobile' | 'tablet';
+  tracked_date: string;
+  rank_change_1d: number;
+  rank_change_7d: number;
+  rank_change_30d: number;
+  top_competitor_url?: string;
+  competitor_rank?: number;
+  created_at: string;
+}
+
+// Traffic analytics
+export interface TrafficAnalytics {
+  id: string;
+  content_id?: string;
+  project_id: string;
+  user_id: string;
+  organic_traffic: number;
+  direct_traffic: number;
+  referral_traffic: number;
+  social_traffic: number;
+  paid_traffic: number;
+  page_views: number;
+  unique_visitors: number;
+  sessions: number;
+  avg_session_duration: number;
+  bounce_rate: number;
+  goal_completions: number;
+  goal_conversion_rate: number;
+  revenue: number;
+  top_countries: any[];
+  device_breakdown: Record<string, any>;
+  date_range_start: string;
+  date_range_end: string;
+  data_source: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Competitor performance comparison
+export interface CompetitorPerformance {
+  id: string;
+  content_id: string;
+  project_id: string;
+  user_id: string;
+  competitor_url: string;
+  competitor_domain: string;
+  competitor_title?: string;
+  our_rank?: number;
+  competitor_rank?: number;
+  rank_difference?: number;
+  keyword: string;
+  our_word_count?: number;
+  competitor_word_count?: number;
+  our_seo_score?: number;
+  competitor_seo_score?: number;
+  our_traffic_estimate?: number;
+  competitor_traffic_estimate?: number;
+  our_backlinks: number;
+  competitor_backlinks: number;
+  competitive_advantage: Record<string, any>;
+  improvement_opportunities: any[];
+  analysis_date: string;
+  created_at: string;
+}
+
+// Content ROI data
+export interface ContentROIData {
+  id: string;
+  content_id: string;
+  project_id: string;
+  user_id: string;
+  content_creation_cost: number;
+  promotion_cost: number;
+  total_investment: number;
+  direct_revenue: number;
+  attributed_revenue: number;
+  estimated_revenue: number;
+  organic_traffic_value: number;
+  conversion_value: number;
+  brand_awareness_value: number;
+  roi_percentage: number;
+  payback_period_days?: number;
+  lifetime_value: number;
+  time_saved_hours: number;
+  time_saved_value: number;
+  calculation_date: string;
+  calculation_method: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Automated reports
+export interface AutomatedReport {
+  id: string;
+  user_id: string;
+  project_id?: string;
+  report_name: string;
+  report_type: 'weekly' | 'monthly' | 'quarterly' | 'custom';
+  report_format: 'pdf' | 'html' | 'json' | 'csv';
+  schedule_enabled: boolean;
+  schedule_frequency: 'weekly' | 'monthly' | 'quarterly';
+  schedule_day_of_week?: number;
+  schedule_day_of_month?: number;
+  next_run_date?: string;
+  include_performance_metrics: boolean;
+  include_traffic_analytics: boolean;
+  include_keyword_rankings: boolean;
+  include_competitor_analysis: boolean;
+  include_roi_calculations: boolean;
+  email_recipients: string[];
+  webhook_url?: string;
+  last_generated_at?: string;
+  last_report_data?: Record<string, any>;
+  generation_status: 'pending' | 'generating' | 'completed' | 'failed';
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// Report generation log
+export interface ReportGenerationLog {
+  id: string;
+  report_id: string;
+  user_id: string;
+  generation_started_at: string;
+  generation_completed_at?: string;
+  generation_status: 'started' | 'completed' | 'failed';
+  content_pieces_analyzed: number;
+  data_points_processed: number;
+  processing_time_ms?: number;
+  report_file_path?: string;
+  report_file_size?: number;
+  report_url?: string;
+  error_message?: string;
+  error_details?: Record<string, any>;
+  created_at: string;
+}
+
 // Database table names
 export const TABLE_NAMES = {
   USERS: 'users',
@@ -107,6 +355,18 @@ export const TABLE_NAMES = {
   SERP_ANALYSIS: 'serp_analysis',
   COMPETITOR_ANALYSIS: 'competitor_analysis',
   USAGE_ANALYTICS: 'usage_analytics',
+  PROJECT_TAGS: 'project_tags',
+  CONTENT_TAGS: 'content_tags',
+  PROJECT_ACCESS_CONTROL: 'project_access_control',
+  CONTENT_CALENDAR: 'content_calendar',
+  PROJECT_METRICS: 'project_metrics',
+  CONTENT_PERFORMANCE: 'content_performance',
+  KEYWORD_RANKING_HISTORY: 'keyword_ranking_history',
+  TRAFFIC_ANALYTICS: 'traffic_analytics',
+  COMPETITOR_PERFORMANCE: 'competitor_performance',
+  CONTENT_ROI_DATA: 'content_roi_data',
+  AUTOMATED_REPORTS: 'automated_reports',
+  REPORT_GENERATION_LOG: 'report_generation_log',
 } as const;
 
 // Database indexes for performance
