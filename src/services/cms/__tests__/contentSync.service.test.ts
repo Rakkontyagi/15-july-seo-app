@@ -26,7 +26,7 @@ describe('ContentSyncService', () => {
     expect(syncResult.contentId).toBe(contentId);
     expect(syncResult.platform).toBe(platform);
     expect(syncResult.syncDirection).toBe('bidirectional');
-    expect(syncResult.syncStatus).toBeOneOf(['synced', 'conflict', 'out_of_sync']);
+    expect(['synced', 'conflict', 'out_of_sync']).toContain(syncResult.syncStatus);
     expect(syncResult.localHash).toBeDefined();
     expect(syncResult.remoteHash).toBeDefined();
     expect(syncResult.lastSyncAt).toBeDefined();
@@ -59,6 +59,10 @@ describe('ContentSyncService', () => {
     const platform = 'wordpress';
 
     const firstSync = await service.syncContent(contentId, platform);
+
+    // Add a small delay to ensure different timestamps
+    await new Promise(resolve => setTimeout(resolve, 2));
+
     const secondSync = await service.syncContent(contentId, platform);
 
     expect(firstSync.id).toBe(secondSync.id);
@@ -76,7 +80,7 @@ describe('ContentSyncService', () => {
 
     expect(conflictResult.localHash).toBeDefined();
     expect(conflictResult.remoteHash).toBeDefined();
-    expect(conflictResult.syncStatus).toBeOneOf(['synced', 'conflict']);
+    expect(['synced', 'conflict']).toContain(conflictResult.syncStatus);
   });
 
   it('should throw error when detecting conflicts for non-existent sync', async () => {
