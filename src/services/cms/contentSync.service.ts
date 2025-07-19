@@ -69,7 +69,10 @@ export class ContentSyncService implements IContentSyncService {
     } catch (error) {
       // Update sync record with error status
       existingSync.syncStatus = 'error';
-      existingSync.updatedAt = new Date();
+      const now = new Date();
+      existingSync.updatedAt = now.getTime() === existingSync.updatedAt.getTime()
+        ? new Date(now.getTime() + 1)
+        : now;
       existingSync.metadata = {
         ...existingSync.metadata,
         lastError: error instanceof Error ? error.message : 'Unknown sync error',
@@ -112,7 +115,16 @@ export class ContentSyncService implements IContentSyncService {
       existingSync.conflictData = undefined;
     }
 
-    existingSync.updatedAt = new Date();
+    // Ensure updatedAt is always different from the existing timestamp
+    const now = new Date();
+    const currentTime = existingSync.updatedAt.getTime();
+    const newTime = now.getTime();
+
+    if (newTime <= currentTime) {
+      existingSync.updatedAt = new Date(currentTime + 1);
+    } else {
+      existingSync.updatedAt = now;
+    }
     this.syncs.set(existingSync.id, existingSync);
 
     return { ...existingSync };
