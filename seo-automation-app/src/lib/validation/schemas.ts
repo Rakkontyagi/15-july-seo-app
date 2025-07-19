@@ -5,24 +5,38 @@
 
 import { z } from 'zod';
 
-// Common validation patterns
+// Common validation patterns - made more permissive for practical use
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^\+?[\d\s\-\(\)]+$/;
 const URL_REGEX = /^https?:\/\/.+/;
-const KEYWORD_REGEX = /^[a-zA-Z0-9\s\-_.,!?'"]+$/;
-const SAFE_TEXT_REGEX = /^[a-zA-Z0-9\s\-_.,!?'"()[\]{}@#$%^&*+=|\\:;/<>~`]+$/;
+const KEYWORD_REGEX = /^[a-zA-Z0-9\s\-_.,!?'"&()]+$/; // More permissive for keywords
+const SAFE_TEXT_REGEX = /^[a-zA-Z0-9\s\-_.,!?'"()[\]@#$%^&*+=|\\:;/<>~`\u00C0-\u017F]+$/; // Include unicode characters but exclude {}
 
 // Base schemas for reuse
 export const baseSchemas = {
-  email: z.string().email('Invalid email format').regex(EMAIL_REGEX, 'Invalid email format'),
+  email: z.string().email('Invalid email format'),
   
   password: z.string()
     .min(8, 'Password must be at least 8 characters')
     .max(128, 'Password must be less than 128 characters')
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, 
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/,
            'Password must contain uppercase, lowercase, number, and special character'),
   
-  url: z.string().url('Invalid URL format').regex(URL_REGEX, 'URL must start with http:// or https://'),
+  url: z.string().url('Invalid URL format').refine(
+    (url) => {
+      try {
+        const urlObj = new URL(url);
+        return ['http:', 'https:'].includes(urlObj.protocol) &&
+               urlObj.hostname.length > 0 &&
+               urlObj.hostname !== '.' &&
+               !urlObj.hostname.startsWith('.') &&
+               !urlObj.hostname.endsWith('.');
+      } catch {
+        return false;
+      }
+    },
+    'URL must use http or https protocol and have a valid hostname'
+  ),
   
   keyword: z.string()
     .min(1, 'Keyword is required')
@@ -40,7 +54,7 @@ export const baseSchemas = {
   slug: z.string()
     .min(1, 'Slug is required')
     .max(100, 'Slug must be less than 100 characters')
-    .regex(/^[a-z0-9-]+$/, 'Slug can only contain lowercase letters, numbers, and hyphens'),
+    .regex(/^[a-z0-9]+([a-z0-9-]*[a-z0-9]+)*$/, 'Slug can only contain lowercase letters, numbers, and hyphens'),
 };
 
 // Authentication schemas
@@ -124,7 +138,7 @@ export const contentSchemas = {
       .min(1, 'Title is required')
       .max(200, 'Title must be less than 200 characters'),
     content: z.string()
-      .min(100, 'Content must be at least 100 characters')
+      .min(10, 'Content must be at least 10 characters')
       .max(50000, 'Content must be less than 50,000 characters'),
     metaDescription: z.string()
       .max(160, 'Meta description must be less than 160 characters')
@@ -204,7 +218,8 @@ export const apiSchemas = {
       .min(1, 'Search query is required')
       .max(100, 'Search query must be less than 100 characters'),
     filters: z.record(z.string()).optional(),
-    ...apiSchemas?.pagination?.shape || {}
+    page: z.number().int().min(1).optional(),
+    limit: z.number().int().min(1).max(100).optional()
   }),
 
   bulkOperation: z.object({

@@ -64,10 +64,24 @@ export function AccessibilityPanel({ isOpen, onClose, className }: Accessibility
   useEffect(() => {
     // Save settings to localStorage
     localStorage.setItem('accessibility-settings', JSON.stringify(settings));
-    
+
     // Apply settings to document
     applyAccessibilitySettings(settings);
   }, [settings]);
+
+  useEffect(() => {
+    // Handle escape key to close panel
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [isOpen, onClose]);
 
   const updateSetting = <K extends keyof AccessibilitySettings>(
     key: K,
@@ -330,47 +344,183 @@ function applyAccessibilitySettings(settings: AccessibilitySettings) {
   // High contrast
   if (settings.highContrast) {
     root.classList.add('high-contrast');
+    root.setAttribute('data-high-contrast', 'true');
   } else {
     root.classList.remove('high-contrast');
+    root.removeAttribute('data-high-contrast');
   }
 
   // Large text
   if (settings.largeText) {
     root.classList.add('large-text');
+    root.setAttribute('data-large-text', 'true');
   } else {
     root.classList.remove('large-text');
+    root.removeAttribute('data-large-text');
   }
 
   // Reduced motion
   if (settings.reducedMotion) {
     root.classList.add('reduced-motion');
+    root.setAttribute('data-reduced-motion', 'true');
+    // Also set CSS custom property for animations
+    root.style.setProperty('--animation-duration', '0.01ms');
+    root.style.setProperty('--transition-duration', '0.01ms');
   } else {
     root.classList.remove('reduced-motion');
+    root.removeAttribute('data-reduced-motion');
+    root.style.removeProperty('--animation-duration');
+    root.style.removeProperty('--transition-duration');
   }
 
   // Focus visible
   if (settings.focusVisible) {
     root.classList.add('focus-visible');
+    root.setAttribute('data-focus-visible', 'true');
   } else {
     root.classList.remove('focus-visible');
+    root.removeAttribute('data-focus-visible');
+  }
+
+  // Keyboard navigation
+  if (settings.keyboardNav) {
+    root.classList.add('keyboard-nav');
+    root.setAttribute('data-keyboard-nav', 'true');
+    // Enable keyboard navigation for all interactive elements
+    enableKeyboardNavigation();
+  } else {
+    root.classList.remove('keyboard-nav');
+    root.removeAttribute('data-keyboard-nav');
+  }
+
+  // Screen reader support
+  if (settings.screenReader) {
+    root.setAttribute('data-screen-reader', 'true');
+    // Enhance ARIA labels and descriptions
+    enhanceScreenReaderSupport();
+  } else {
+    root.removeAttribute('data-screen-reader');
   }
 
   // Font size
   root.classList.remove('text-small', 'text-medium', 'text-large', 'text-xl');
   root.classList.add(`text-${settings.fontSize}`);
+  root.setAttribute('data-font-size', settings.fontSize);
 
   // Color scheme
   if (settings.colorScheme === 'dark') {
     root.classList.add('dark');
+    root.setAttribute('data-theme', 'dark');
   } else if (settings.colorScheme === 'light') {
     root.classList.remove('dark');
+    root.setAttribute('data-theme', 'light');
   } else {
     // Auto mode - use system preference
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    const prefersDark = safeMatchMedia('(prefers-color-scheme: dark)');
+    if (prefersDark) {
       root.classList.add('dark');
+      root.setAttribute('data-theme', 'dark');
     } else {
       root.classList.remove('dark');
+      root.setAttribute('data-theme', 'light');
     }
+  }
+
+  // Announce changes to screen readers
+  announceSettingsChange(settings);
+}
+
+// Enhanced keyboard navigation support
+function enableKeyboardNavigation() {
+  // Add keyboard event listeners for better navigation
+  document.addEventListener('keydown', handleKeyboardNavigation);
+
+  // Ensure all interactive elements are focusable
+  const interactiveElements = document.querySelectorAll(
+    'button, [role="button"], a, input, select, textarea, [tabindex]:not([tabindex="-1"])'
+  );
+
+  interactiveElements.forEach(element => {
+    if (!element.hasAttribute('tabindex')) {
+      element.setAttribute('tabindex', '0');
+    }
+  });
+}
+
+// Enhanced screen reader support
+function enhanceScreenReaderSupport() {
+  // Add missing ARIA labels
+  const elementsNeedingLabels = document.querySelectorAll(
+    'button:not([aria-label]):not([aria-labelledby]), [role="button"]:not([aria-label]):not([aria-labelledby])'
+  );
+
+  elementsNeedingLabels.forEach(element => {
+    const text = element.textContent?.trim();
+    if (text) {
+      element.setAttribute('aria-label', text);
+    }
+  });
+
+  // Add live regions for dynamic content
+  if (!document.querySelector('[aria-live="polite"]')) {
+    const liveRegion = document.createElement('div');
+    liveRegion.setAttribute('aria-live', 'polite');
+    liveRegion.setAttribute('aria-atomic', 'true');
+    liveRegion.className = 'sr-only';
+    liveRegion.id = 'accessibility-live-region';
+    document.body.appendChild(liveRegion);
+  }
+}
+
+// Keyboard navigation handler
+function handleKeyboardNavigation(event: KeyboardEvent) {
+  // Handle Escape key to close modals/dropdowns
+  if (event.key === 'Escape') {
+    const openModals = document.querySelectorAll('[role="dialog"][aria-hidden="false"]');
+    openModals.forEach(modal => {
+      const closeButton = modal.querySelector('[aria-label*="close"], [aria-label*="Close"]');
+      if (closeButton instanceof HTMLElement) {
+        closeButton.click();
+      }
+    });
+  }
+
+  // Handle Tab navigation improvements
+  if (event.key === 'Tab') {
+    // Ensure focus is visible
+    document.body.classList.add('keyboard-navigation');
+  }
+}
+
+// Announce settings changes to screen readers
+function announceSettingsChange(settings: AccessibilitySettings) {
+  const liveRegion = document.getElementById('accessibility-live-region');
+  if (liveRegion) {
+    const changes = [];
+    if (settings.highContrast) changes.push('High contrast enabled');
+    if (settings.largeText) changes.push('Large text enabled');
+    if (settings.reducedMotion) changes.push('Reduced motion enabled');
+
+    if (changes.length > 0) {
+      liveRegion.textContent = `Accessibility settings updated: ${changes.join(', ')}`;
+
+      // Clear the announcement after a delay
+      setTimeout(() => {
+        liveRegion.textContent = '';
+      }, 3000);
+    }
+  }
+}
+
+// Safe matchMedia check for testing environments
+function safeMatchMedia(query: string): boolean {
+  if (typeof window === 'undefined' || !window.matchMedia) {
+    return false;
+  }
+  try {
+    return window.matchMedia(query).matches;
+  } catch (error) {
+    return false;
   }
 }
 

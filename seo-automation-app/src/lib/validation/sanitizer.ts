@@ -47,19 +47,21 @@ export class InputSanitizer {
     } = options;
 
     try {
-      // Configure DOMPurify
+      // Configure DOMPurify with balanced security and usability
       const config = {
         ALLOWED_TAGS: allowedTags,
         ALLOWED_ATTR: allowedAttributes,
-        KEEP_CONTENT: true,
+        KEEP_CONTENT: true, // Keep content of forbidden tags but remove the tags
         RETURN_DOM: false,
         RETURN_DOM_FRAGMENT: false,
         RETURN_DOM_IMPORT: false,
         SANITIZE_DOM: true,
         WHOLE_DOCUMENT: false,
-        // Remove script tags and event handlers
-        FORBID_TAGS: ['script', 'object', 'embed', 'form', 'input'],
-        FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur']
+        // Remove dangerous tags and event handlers
+        FORBID_TAGS: ['script', 'object', 'embed', 'form', 'input', 'iframe', 'frame', 'frameset', 'noframes'],
+        FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur', 'onsubmit', 'onchange', 'onkeydown', 'onkeyup', 'onkeypress'],
+        // Don't force body wrapper for inline content
+        FORCE_BODY: false
       };
 
       let sanitized = DOMPurify.sanitize(input, config);
@@ -200,12 +202,29 @@ export class InputSanitizer {
       return '';
     }
 
-    return filename
+    // Split filename and extension
+    const lastDotIndex = filename.lastIndexOf('.');
+    let name = filename;
+    let extension = '';
+
+    if (lastDotIndex > 0) {
+      name = filename.substring(0, lastDotIndex);
+      extension = filename.substring(lastDotIndex);
+    }
+
+    // Sanitize name part
+    const sanitizedName = name
       .trim()
-      .replace(/[^a-zA-Z0-9.-]/g, '_')
+      .replace(/[^a-zA-Z0-9-]/g, '_')
       .replace(/_{2,}/g, '_')
-      .replace(/^_+|_+$/g, '')
-      .substring(0, 255);
+      .replace(/^_+|_+$/g, '');
+
+    // Sanitize extension
+    const sanitizedExtension = extension
+      .replace(/[^a-zA-Z0-9.]/g, '');
+
+    const result = sanitizedName + sanitizedExtension;
+    return result.substring(0, 255);
   }
 
   /**
@@ -224,6 +243,8 @@ export class InputSanitizer {
       .replace(/\*\//g, '')
       .replace(/\bUNION\b/gi, '')
       .replace(/\bSELECT\b/gi, '')
+      .replace(/\bFROM\b/gi, '')
+      .replace(/\bWHERE\b/gi, '')
       .replace(/\bINSERT\b/gi, '')
       .replace(/\bUPDATE\b/gi, '')
       .replace(/\bDELETE\b/gi, '')
@@ -245,6 +266,7 @@ export class InputSanitizer {
 
     return query
       .trim()
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
       .replace(/[<>]/g, '')
       .replace(/['"]/g, '')
       .replace(/\s+/g, ' ')
@@ -265,22 +287,30 @@ export class InputSanitizer {
   }
 
   /**
-   * Sanitize object recursively
+   * Sanitize object recursively with circular reference detection
    */
   public static sanitizeObject(
-    obj: Record<string, any>, 
-    options: SanitizationOptions = {}
+    obj: Record<string, any>,
+    options: SanitizationOptions = {},
+    visited: WeakSet<object> = new WeakSet()
   ): Record<string, any> {
     if (!obj || typeof obj !== 'object') {
       return {};
     }
 
+    // Check for circular references
+    if (visited.has(obj)) {
+      logger.warn('Circular reference detected in object sanitization');
+      return {};
+    }
+
+    visited.add(obj);
     const sanitized: Record<string, any> = {};
 
     for (const [key, value] of Object.entries(obj)) {
       // Sanitize key
       const sanitizedKey = this.sanitizeText(key, { maxLength: 100 });
-      
+
       if (!sanitizedKey) {
         continue;
       }
@@ -295,10 +325,11 @@ export class InputSanitizer {
           .filter(item => item != null)
           .map(item => typeof item === 'string' ? this.sanitizeText(item, options) : item);
       } else if (value && typeof value === 'object') {
-        sanitized[sanitizedKey] = this.sanitizeObject(value, options);
+        sanitized[sanitizedKey] = this.sanitizeObject(value, options, visited);
       }
     }
 
+    visited.delete(obj);
     return sanitized;
   }
 

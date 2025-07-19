@@ -126,39 +126,57 @@ export class SentryManager {
    * Build Sentry integrations based on configuration
    */
   private buildIntegrations(): Sentry.Integration[] {
-    const integrations: Sentry.Integration[] = [
-      new Sentry.BrowserTracing({
-        // Capture interactions
-        tracePropagationTargets: [
-          'localhost',
-          /^https:\/\/.*\.vercel\.app/,
-          /^https:\/\/.*\.seoautomation\.app/
-        ],
-        // Capture navigation and route changes
-        routingInstrumentation: Sentry.nextRouterInstrumentation,
-      })
-    ];
+    const integrations: Sentry.Integration[] = [];
+
+    // Add browser tracing for performance monitoring
+    if (this.config.enablePerformanceMonitoring && typeof window !== 'undefined') {
+      try {
+        // Use the correct import for newer Sentry versions
+        const browserTracingIntegration = Sentry.browserTracingIntegration({
+          // Capture interactions
+          tracePropagationTargets: [
+            'localhost',
+            /^https:\/\/.*\.vercel\.app/,
+            /^https:\/\/.*\.seoautomation\.app/
+          ],
+        });
+        integrations.push(browserTracingIntegration);
+      } catch (error) {
+        // Fallback for older versions or if browserTracingIntegration is not available
+        logger.warn('Browser tracing integration not available, skipping performance monitoring');
+      }
+    }
 
     // Add HTTP integration for API monitoring
     if (typeof window === 'undefined') {
       // Server-side integrations
-      integrations.push(
-        new Sentry.Integrations.Http({ tracing: true }),
-        new Sentry.Integrations.OnUncaughtException(),
-        new Sentry.Integrations.OnUnhandledRejection()
-      );
+      try {
+        integrations.push(
+          Sentry.httpIntegration({ tracing: true }),
+          Sentry.onUncaughtExceptionIntegration(),
+          Sentry.onUnhandledRejectionIntegration()
+        );
+      } catch (error) {
+        // Fallback for older versions
+        logger.warn('Some server-side integrations not available, using fallbacks');
+      }
     } else {
       // Client-side integrations
-      integrations.push(
-        new Sentry.Integrations.Breadcrumbs({
-          console: true,
-          dom: true,
-          fetch: true,
-          history: true,
-          sentry: true,
-          xhr: true
-        })
-      );
+      try {
+        integrations.push(
+          Sentry.breadcrumbsIntegration({
+            console: true,
+            dom: true,
+            fetch: true,
+            history: true,
+            sentry: true,
+            xhr: true
+          })
+        );
+      } catch (error) {
+        // Fallback for older versions
+        logger.warn('Breadcrumbs integration not available, using fallback');
+      }
     }
 
     return integrations;

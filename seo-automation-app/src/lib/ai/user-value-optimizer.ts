@@ -35,7 +35,7 @@ export class UserValueOptimizer {
 
     // Recommendations based on potential gaps
     if (userIntentCoverage < 75) {
-      valueRecommendations.push('Ensure the content directly addresses the user's core intent for the keyword.');
+      valueRecommendations.push('Ensure the content directly addresses the user core intent for the keyword.');
     }
     if (actionableInsightsScore < 75) {
       valueRecommendations.push('Provide more clear, actionable steps or insights for the user.');

@@ -7,7 +7,7 @@ import { EeatOptimizer, EeatOptimizationResult } from './eeat-optimizer';
 import { CurrentInformationIntegrator } from './current-information-integrator';
 import { UserValueOptimizer, UserValueAnalysisResult } from './user-value-optimizer';
 import { AuthoritySignalIntegrator, AuthoritySignalAnalysisResult } from './authority-signal-integrator';
-import { NLPOptimizer } from './nlp-optimizer';
+import { NLPOptimizer, NLPOptimizationResult } from './nlp-optimizer';
 import { KeywordIntegrator } from './keyword-integrator';
 import { UniquenessVerifier, UniquenessVerificationResult } from './uniqueness-verifier';
 import { TopicalClusterCompleter, TopicalClusterAnalysisResult } from './topical-cluster-completer';
@@ -26,6 +26,7 @@ export interface GeneratedContent {
   eeatOptimization: EeatOptimizationResult; // E-E-A-T optimization analysis
   userValueAnalysis: UserValueAnalysisResult; // User value analysis
   authoritySignalAnalysis: AuthoritySignalAnalysisResult; // Authority signal analysis
+  nlpOptimizationResult: NLPOptimizationResult; // Comprehensive NLP optimization results
   nlpOptimizationIssues: string[]; // Issues from NLP optimization
   contentBalanceIssues: string[]; // Issues from content balance verification
   uniquenessVerification: UniquenessVerificationResult; // Uniqueness verification result
@@ -181,41 +182,36 @@ export class AIContentGenerator {
       const userValueAnalysis = this.userValueOptimizer.optimize(content, { keyword: options.keyword, targetAudience: options.targetAudience });
       const authoritySignalAnalysis = this.authoritySignalIntegrator.integrate(content);
 
-      // Apply NLP optimizations and collect issues
+      // Apply comprehensive NLP optimizations
+      const nlpOptimizationResult = this.nlpOptimizer.optimize(content);
+      content = nlpOptimizationResult.optimizedContent;
+
+      // Collect NLP optimization issues and recommendations
       const nlpOptimizationIssues: string[] = [];
-      const sentences = content.split(/[.!?]/).filter(s => s.trim().length > 0);
-      let optimizedSentences: string[] = [];
 
-      sentences.forEach(sentence => {
-        let processedSentence = sentence;
-        // 1. Enforce SVO (simplified)
-        processedSentence = this.nlpOptimizer.enforceSVO(processedSentence);
-        
-        // 2. Eliminate filler content
-        processedSentence = this.nlpOptimizer.eliminateFillerContent(processedSentence);
-
-        // 3. Apply language precision
-        processedSentence = this.nlpOptimizer.applyLanguagePrecision(processedSentence);
-
-        optimizedSentences.push(processedSentence);
-      });
-      content = optimizedSentences.join('. '); // Reconstruct content
-
-      // 4. Prohibited phrase detection
-      const prohibitedPhrases = ["meticulous", "navigating", "complexities", "realm", "bespoke", "tailored"];
-      const detectedProhibited = this.nlpOptimizer.detectProhibitedPhrases(content, prohibitedPhrases);
-      if (detectedProhibited.length > 0) {
-        nlpOptimizationIssues.push(`Detected prohibited phrases: ${detectedProhibited.join(', ')}.`);
+      // Track optimization metrics
+      if (nlpOptimizationResult.metrics.svoComplianceScore < 80) {
+        nlpOptimizationIssues.push(`SVO compliance needs improvement: ${nlpOptimizationResult.metrics.svoComplianceScore.toFixed(1)}/100`);
       }
 
-      // 5. Grammar and syntax validation
-      const grammarIssues = this.nlpOptimizer.validateGrammarAndSyntax(content);
-      if (grammarIssues.length > 0) {
-        nlpOptimizationIssues.push(`Grammar/Syntax issues: ${grammarIssues.join(', ')}.`);
+      if (nlpOptimizationResult.metrics.prohibitedPhrasesRemoved > 0) {
+        nlpOptimizationIssues.push(`Removed ${nlpOptimizationResult.metrics.prohibitedPhrasesRemoved} overused SEO phrases`);
       }
 
-      // 6. Content flow optimization (simplified, as it's mostly handled by prompt and initial generation)
-      content = this.nlpOptimizer.optimizeContentFlow(content);
+      if (nlpOptimizationResult.metrics.fillerContentPercentage > 3) {
+        nlpOptimizationIssues.push(`Filler content detected: ${nlpOptimizationResult.metrics.fillerContentPercentage.toFixed(1)}%`);
+      }
+
+      if (nlpOptimizationResult.metrics.sentenceComplexityScore > 70) {
+        nlpOptimizationIssues.push(`High sentence complexity: ${nlpOptimizationResult.metrics.sentenceComplexityScore.toFixed(1)}/100`);
+      }
+
+      if (nlpOptimizationResult.metrics.grammarAccuracyScore < 90) {
+        nlpOptimizationIssues.push(`Grammar accuracy needs improvement: ${nlpOptimizationResult.metrics.grammarAccuracyScore.toFixed(1)}/100`);
+      }
+
+      // Add specific recommendations from NLP optimizer
+      nlpOptimizationIssues.push(...nlpOptimizationResult.recommendations);
 
       // 7. Content balance verification
       const contentBalanceIssues = this.keywordIntegrator.verifyContentBalance(content);
@@ -253,6 +249,7 @@ export class AIContentGenerator {
         eeatOptimization,
         userValueAnalysis,
         authoritySignalAnalysis,
+        nlpOptimizationResult, // Include comprehensive NLP optimization results
         nlpOptimizationIssues,
         contentBalanceIssues,
         uniquenessVerification,
