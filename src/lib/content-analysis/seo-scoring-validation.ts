@@ -1,6 +1,6 @@
 
 import { SentenceTokenizer, WordTokenizer } from 'natural';
-import * as compromise from 'compromise';
+import compromise from 'compromise';
 import { PrecisionSEOOptimizer } from './precision-seo-optimizer';
 import { LSIKeywordIntegrator } from './lsi-integrator';
 import { EntityOptimizer } from './entity-optimizer';
