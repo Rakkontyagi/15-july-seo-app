@@ -18,6 +18,11 @@ export class LocalSearchAnalyzer {
    * @returns Analysis of local search patterns.
    */
   analyze(region: string, keyword: string): LocalSearchPatternAnalysisResult {
+    // Handle null/undefined inputs gracefully
+    if (!region || !keyword) {
+      return this.getDefaultAnalysis();
+    }
+
     const recommendations: string[] = [];
     const lowerRegion = region.toLowerCase();
     const lowerKeyword = keyword.toLowerCase();
@@ -28,28 +33,50 @@ export class LocalSearchAnalyzer {
     const regionSpecificContentStructure: string[] = [];
     const localUserIntentClassification: string[] = [];
 
-    // Simulate regional differences
-    if (lowerRegion.includes('uae') || lowerRegion.includes('dubai')) {
+    // Australia specific patterns (check first to avoid "us" in "Australia" matching US)
+    if (lowerRegion.includes('australia') || lowerRegion === 'au') {
+      regionalSearchBehavior.push('Casual and friendly search approach.', 'Preference for authentic, down-to-earth content.');
+      localOptimizationPatterns.push('Australian English spelling and slang.', 'Focus on local directories and reviews.');
+      culturalSearchPreferences.push('Informal but professional tone.', 'Preference for authenticity.');
+      regionSpecificContentStructure.push('Conversational style with practical examples.', 'Use of local references.');
+      localUserIntentClassification.push('Balanced informational and transactional intent.', 'Value-conscious decision making.');
+      recommendations.push('Use Australian English and maintain a friendly, approachable tone.');
+    }
+    // UAE/Dubai specific patterns
+    else if (lowerRegion.includes('uae') || lowerRegion.includes('dubai') || lowerRegion.includes('emirates')) {
       regionalSearchBehavior.push('High mobile search usage.', 'Emphasis on luxury and high-end products.');
       localOptimizationPatterns.push('Inclusion of Arabic keywords alongside English.', 'Focus on local business listings.');
-      culturalSearchPreferences.push('Formal and respectful tone.', 'Indirect communication preferred.');
-      regionSpecificContentStructure.push('Often includes sections on cultural relevance.');
-      localUserIntentClassification.push('Strong transactional intent for services.');
+      culturalSearchPreferences.push('Formal and respectful tone.', 'Family-oriented messaging.');
+      regionSpecificContentStructure.push('Often includes sections on cultural relevance.', 'Emphasis on trust and credibility.');
+      localUserIntentClassification.push('Strong transactional intent for services.', 'High value placed on recommendations.');
       recommendations.push('Ensure mobile-first design and localized content.');
-    } else if (lowerRegion.includes('uk') || lowerRegion.includes('united kingdom')) {
-      regionalSearchBehavior.push('Strong preference for informational queries.', 'Use of specific local terms.');
-      localOptimizationPatterns.push('Optimization for local SEO packs.', 'Emphasis on reviews and testimonials.');
-      culturalSearchPreferences.push('Pragmatic and direct communication.', 'Value for understatement.');
-      regionSpecificContentStructure.push('Often includes detailed guides and comparisons.');
-      localUserIntentClassification.push('Balanced mix of informational and transactional intent.');
-      recommendations.push('Focus on providing in-depth, factual information.');
-    } else if (lowerRegion.includes('us') || lowerRegion.includes('united states')) {
-      regionalSearchBehavior.push('High volume of voice search.', 'Strong brand search.');
-      localOptimizationPatterns.push('Extensive use of long-tail keywords.', 'Integration with Google My Business.');
-      culturalSearchPreferences.push('Direct and clear communication.', 'Value for efficiency.');
-      regionSpecificContentStructure.push('Often features strong calls to action and benefit-driven language.');
-      localUserIntentClassification.push('High transactional intent, especially for e-commerce.');
-      recommendations.push('Optimize for voice search and clear CTAs.');
+    }
+    // UK specific patterns
+    else if (lowerRegion.includes('uk') || lowerRegion.includes('united kingdom') || lowerRegion.includes('britain')) {
+      regionalSearchBehavior.push('Preference for detailed, factual information.', 'Lower tolerance for hyperbolic claims.');
+      localOptimizationPatterns.push('British English spelling and terminology.', 'Focus on local directories.');
+      culturalSearchPreferences.push('Reserved and factual communication style.', 'Preference for understatement.');
+      regionSpecificContentStructure.push('Structured with clear headings and bullet points.', 'Emphasis on practical information.');
+      localUserIntentClassification.push('Strong informational intent.', 'Cautious approach to purchasing decisions.');
+      recommendations.push('Use British English and avoid overly promotional language.');
+    }
+    // US specific patterns
+    else if (lowerRegion.includes('us') || lowerRegion.includes('united states') || lowerRegion.includes('america')) {
+      regionalSearchBehavior.push('Direct and benefit-focused search queries.', 'High expectation for immediate value.');
+      localOptimizationPatterns.push('American English spelling and terminology.', 'Focus on local SEO and Google My Business.');
+      culturalSearchPreferences.push('Direct and action-oriented communication.', 'Emphasis on benefits and results.');
+      regionSpecificContentStructure.push('Clear value propositions and CTAs.', 'Use of testimonials and social proof.');
+      localUserIntentClassification.push('Mixed transactional and informational intent.', 'Quick decision-making process.');
+      recommendations.push('Emphasize clear benefits and strong calls-to-action.');
+    }
+    // Default/unknown region patterns
+    else {
+      regionalSearchBehavior.push('General search behavior patterns.', 'Mixed device usage patterns.');
+      localOptimizationPatterns.push('Standard SEO optimization techniques.', 'Focus on universal best practices.');
+      culturalSearchPreferences.push('Professional and neutral tone.', 'Clear and accessible communication.');
+      regionSpecificContentStructure.push('Standard content structure with clear headings.', 'Universal design principles.');
+      localUserIntentClassification.push('Mixed search intent patterns.', 'Varied decision-making processes.');
+      recommendations.push('Follow general SEO best practices and maintain professional tone.');
     }
 
     // General recommendations based on keyword
@@ -65,6 +92,20 @@ export class LocalSearchAnalyzer {
       regionSpecificContentStructure,
       localUserIntentClassification,
       recommendations,
+    };
+  }
+
+  /**
+   * Get default analysis for invalid inputs
+   */
+  private getDefaultAnalysis(): LocalSearchPatternAnalysisResult {
+    return {
+      regionalSearchBehavior: ['General search behavior patterns.'],
+      localOptimizationPatterns: ['Standard SEO optimization techniques.'],
+      culturalSearchPreferences: ['Professional and neutral tone.'],
+      regionSpecificContentStructure: ['Standard content structure with clear headings.'],
+      localUserIntentClassification: ['Mixed search intent patterns.'],
+      recommendations: ['Follow general SEO best practices and maintain professional tone.'],
     };
   }
 }
