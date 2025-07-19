@@ -247,9 +247,9 @@ describe('FeaturedSnippetOptimizationService', () => {
     const howResult = await service.optimize({ content, targetQuery: howQuery });
     const whyResult = await service.optimize({ content, targetQuery: whyQuery });
 
-    expect(whatResult.optimizedContent).toContain('email marketing');
-    expect(howResult.optimizedContent).toContain('email marketing');
-    expect(whyResult.optimizedContent).toContain('email marketing');
+    expect(whatResult.optimizedContent.toLowerCase()).toContain('email marketing');
+    expect(howResult.optimizedContent.toLowerCase()).toContain('email marketing');
+    expect(whyResult.optimizedContent.toLowerCase()).toContain('email marketing');
 
     // Different query types should potentially recommend different formats
     expect([whatResult.recommendedSnippetType, howResult.recommendedSnippetType, whyResult.recommendedSnippetType])

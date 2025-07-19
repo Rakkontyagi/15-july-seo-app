@@ -21,34 +21,127 @@ export interface TechnicalTerm {
 export class ExpertiseValidator {
   private readonly technicalTermDatabase: Map<string, TechnicalTerm[]> = new Map([
     ['seo', [
+      // Basic SEO terms
       { term: 'serp', complexity: 'basic', category: 'seo' },
       { term: 'backlink', complexity: 'basic', category: 'seo' },
+      { term: 'keyword', complexity: 'basic', category: 'seo' },
+      { term: 'meta tag', complexity: 'basic', category: 'seo' },
+      { term: 'organic traffic', complexity: 'basic', category: 'seo' },
+      { term: 'search volume', complexity: 'basic', category: 'seo' },
+      { term: 'ranking factor', complexity: 'basic', category: 'seo' },
+      // Intermediate SEO terms
       { term: 'pagerank', complexity: 'intermediate', category: 'seo' },
       { term: 'crawl budget', complexity: 'intermediate', category: 'seo' },
-      { term: 'topical authority', complexity: 'advanced', category: 'seo' },
-      { term: 'entity optimization', complexity: 'advanced', category: 'seo' },
       { term: 'schema markup', complexity: 'intermediate', category: 'seo' },
       { term: 'canonical url', complexity: 'intermediate', category: 'seo' },
+      { term: 'core web vitals', complexity: 'intermediate', category: 'seo' },
+      { term: 'technical seo', complexity: 'intermediate', category: 'seo' },
+      { term: 'on-page optimization', complexity: 'intermediate', category: 'seo' },
+      { term: 'link building', complexity: 'intermediate', category: 'seo' },
+      { term: 'serp features', complexity: 'intermediate', category: 'seo' },
+      // Advanced SEO terms
+      { term: 'topical authority', complexity: 'advanced', category: 'seo' },
+      { term: 'entity optimization', complexity: 'advanced', category: 'seo' },
       { term: 'hreflang', complexity: 'advanced', category: 'seo' },
-      { term: 'core web vitals', complexity: 'intermediate', category: 'seo' }
+      { term: 'semantic search', complexity: 'advanced', category: 'seo' },
+      { term: 'knowledge graph', complexity: 'advanced', category: 'seo' },
+      { term: 'passage ranking', complexity: 'advanced', category: 'seo' },
+      { term: 'search intent optimization', complexity: 'advanced', category: 'seo' },
+      { term: 'featured snippets optimization', complexity: 'advanced', category: 'seo' }
     ]],
     ['technology', [
+      // Basic technology terms
       { term: 'api', complexity: 'basic', category: 'technology' },
       { term: 'algorithm', complexity: 'basic', category: 'technology' },
+      { term: 'database', complexity: 'basic', category: 'technology' },
+      { term: 'server', complexity: 'basic', category: 'technology' },
+      { term: 'cloud computing', complexity: 'basic', category: 'technology' },
+      { term: 'programming', complexity: 'basic', category: 'technology' },
+      { term: 'data structure', complexity: 'basic', category: 'technology' },
+      // Intermediate technology terms
       { term: 'machine learning', complexity: 'intermediate', category: 'technology' },
-      { term: 'neural network', complexity: 'advanced', category: 'technology' },
       { term: 'microservices', complexity: 'intermediate', category: 'technology' },
       { term: 'containerization', complexity: 'intermediate', category: 'technology' },
+      { term: 'ci/cd', complexity: 'intermediate', category: 'technology' },
+      { term: 'load balancing', complexity: 'intermediate', category: 'technology' },
+      { term: 'rest api', complexity: 'intermediate', category: 'technology' },
+      { term: 'graphql', complexity: 'intermediate', category: 'technology' },
+      { term: 'nosql', complexity: 'intermediate', category: 'technology' },
+      // Advanced technology terms
+      { term: 'neural network', complexity: 'advanced', category: 'technology' },
       { term: 'distributed systems', complexity: 'advanced', category: 'technology' },
-      { term: 'quantum computing', complexity: 'advanced', category: 'technology' }
+      { term: 'quantum computing', complexity: 'advanced', category: 'technology' },
+      { term: 'artificial intelligence', complexity: 'advanced', category: 'technology' },
+      { term: 'deep learning', complexity: 'advanced', category: 'technology' },
+      { term: 'natural language processing', complexity: 'advanced', category: 'technology' },
+      { term: 'computer vision', complexity: 'advanced', category: 'technology' },
+      { term: 'edge computing', complexity: 'advanced', category: 'technology' }
     ]],
     ['marketing', [
+      // Basic marketing terms
       { term: 'roi', complexity: 'basic', category: 'marketing' },
       { term: 'conversion rate', complexity: 'basic', category: 'marketing' },
+      { term: 'ctr', complexity: 'basic', category: 'marketing' },
+      { term: 'cpc', complexity: 'basic', category: 'marketing' },
+      { term: 'impressions', complexity: 'basic', category: 'marketing' },
+      { term: 'lead generation', complexity: 'basic', category: 'marketing' },
+      { term: 'brand awareness', complexity: 'basic', category: 'marketing' },
+      // Intermediate marketing terms
       { term: 'attribution modeling', complexity: 'intermediate', category: 'marketing' },
       { term: 'customer lifetime value', complexity: 'intermediate', category: 'marketing' },
+      { term: 'cohort analysis', complexity: 'intermediate', category: 'marketing' },
+      { term: 'a/b testing', complexity: 'intermediate', category: 'marketing' },
+      { term: 'funnel optimization', complexity: 'intermediate', category: 'marketing' },
+      { term: 'marketing automation', complexity: 'intermediate', category: 'marketing' },
+      { term: 'customer segmentation', complexity: 'intermediate', category: 'marketing' },
+      // Advanced marketing terms
       { term: 'predictive analytics', complexity: 'advanced', category: 'marketing' },
-      { term: 'cohort analysis', complexity: 'advanced', category: 'marketing' }
+      { term: 'behavioral segmentation', complexity: 'advanced', category: 'marketing' },
+      { term: 'propensity modeling', complexity: 'advanced', category: 'marketing' },
+      { term: 'multi-touch attribution', complexity: 'advanced', category: 'marketing' },
+      { term: 'incrementality testing', complexity: 'advanced', category: 'marketing' },
+      { term: 'real-time personalization', complexity: 'advanced', category: 'marketing' },
+      { term: 'cross-channel optimization', complexity: 'advanced', category: 'marketing' }
+    ]],
+    ['finance', [
+      // Basic finance terms
+      { term: 'revenue', complexity: 'basic', category: 'finance' },
+      { term: 'profit', complexity: 'basic', category: 'finance' },
+      { term: 'cash flow', complexity: 'basic', category: 'finance' },
+      { term: 'budget', complexity: 'basic', category: 'finance' },
+      { term: 'investment', complexity: 'basic', category: 'finance' },
+      // Intermediate finance terms
+      { term: 'financial modeling', complexity: 'intermediate', category: 'finance' },
+      { term: 'valuation', complexity: 'intermediate', category: 'finance' },
+      { term: 'risk management', complexity: 'intermediate', category: 'finance' },
+      { term: 'portfolio optimization', complexity: 'intermediate', category: 'finance' },
+      { term: 'derivatives', complexity: 'intermediate', category: 'finance' },
+      // Advanced finance terms
+      { term: 'quantitative finance', complexity: 'advanced', category: 'finance' },
+      { term: 'algorithmic trading', complexity: 'advanced', category: 'finance' },
+      { term: 'structured products', complexity: 'advanced', category: 'finance' },
+      { term: 'credit risk modeling', complexity: 'advanced', category: 'finance' },
+      { term: 'basel iii', complexity: 'advanced', category: 'finance' }
+    ]],
+    ['healthcare', [
+      // Basic healthcare terms
+      { term: 'diagnosis', complexity: 'basic', category: 'healthcare' },
+      { term: 'treatment', complexity: 'basic', category: 'healthcare' },
+      { term: 'patient care', complexity: 'basic', category: 'healthcare' },
+      { term: 'medication', complexity: 'basic', category: 'healthcare' },
+      { term: 'therapy', complexity: 'basic', category: 'healthcare' },
+      // Intermediate healthcare terms
+      { term: 'clinical trials', complexity: 'intermediate', category: 'healthcare' },
+      { term: 'evidence-based medicine', complexity: 'intermediate', category: 'healthcare' },
+      { term: 'pharmacology', complexity: 'intermediate', category: 'healthcare' },
+      { term: 'medical imaging', complexity: 'intermediate', category: 'healthcare' },
+      { term: 'genomics', complexity: 'intermediate', category: 'healthcare' },
+      // Advanced healthcare terms
+      { term: 'precision medicine', complexity: 'advanced', category: 'healthcare' },
+      { term: 'immunotherapy', complexity: 'advanced', category: 'healthcare' },
+      { term: 'gene therapy', complexity: 'advanced', category: 'healthcare' },
+      { term: 'regenerative medicine', complexity: 'advanced', category: 'healthcare' },
+      { term: 'digital health', complexity: 'advanced', category: 'healthcare' }
     ]]
   ]);
 
