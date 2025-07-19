@@ -269,35 +269,42 @@ export class ExpertAuthorityValidator {
       const sanitizedIndustry = industry.trim();
 
       // Perform analysis with error handling for each component
-      const knowledgeDepth = this.safelyExecute(() => 
-        this.assessKnowledgeDepth(sanitizedContent, sanitizedIndustry)
-      );
-      
-      const technicalSophistication = this.safelyExecute(() => 
-        this.evaluateTechnicalLevel(sanitizedContent, sanitizedIndustry)
-      );
-      
-      const experienceMarkers = this.safelyExecute(() => 
-        this.identifyExperienceElements(sanitizedContent)
-      );
-      
-      const authoritySignals = this.safelyExecute(() => 
-        this.detectAuthorityIndicators(sanitizedContent, sanitizedIndustry)
-      );
-      
-      const expertInsights = this.safelyExecute(() => 
-        this.analyzeInsightQuality(sanitizedContent, sanitizedIndustry)
-      );
-      
-      const problemSolvingMaturity = this.safelyExecute(() => 
-        this.assessProblemSolvingMaturity(sanitizedContent)
-      );
-      
-      const industryBestPractices = this.safelyExecute(() => 
-        this.validateIndustryBestPractices(sanitizedContent, sanitizedIndustry)
+      const knowledgeDepth = this.safelyExecute(() =>
+        this.assessKnowledgeDepth(sanitizedContent, sanitizedIndustry),
+        { score: 0, technicalTermsUsed: [], conceptSophistication: 0, industrySpecificKnowledge: 0, expertiseLevel: 'novice' as const, knowledgeGaps: [] }
       );
 
-      const overallAuthorityScore = this.safelyExecute(() => 
+      const technicalSophistication = this.safelyExecute(() =>
+        this.evaluateTechnicalLevel(sanitizedContent, sanitizedIndustry),
+        { complexityScore: 0, advancedConceptIntegration: 0, technicalDepthValidation: 0, specializedKnowledgeVerification: 0, sophisticationLevel: 'basic' as const }
+      );
+
+      const experienceMarkers = this.safelyExecute(() =>
+        this.identifyExperienceElements(sanitizedContent),
+        { count: 0, elements: [], practicalApplications: [], lessonsLearned: [], realWorldExamples: [], caseStudies: [], experienceNarratives: [] }
+      );
+
+      const authoritySignals = this.safelyExecute(() =>
+        this.detectAuthorityIndicators(sanitizedContent, sanitizedIndustry),
+        { count: 0, indicators: [], credibilityMarkers: [], professionalCredentials: [], industryRecognition: [], thoughtLeadershipMarkers: [] }
+      );
+
+      const expertInsights = this.safelyExecute(() =>
+        this.analyzeInsightQuality(sanitizedContent, sanitizedIndustry),
+        { score: 0, originalityMarkers: [], industryPredictions: [], uniquePerspectives: [], innovativeApproaches: [], thoughtLeadershipIndicators: [] }
+      );
+
+      const problemSolvingMaturity = this.safelyExecute(() =>
+        this.assessProblemSolvingMaturity(sanitizedContent),
+        { analyticalThinking: 0, systematicApproach: 0, complexProblemSolving: 0, strategicInsight: 0, maturityLevel: 'basic' as const }
+      );
+
+      const industryBestPractices = this.safelyExecute(() =>
+        this.validateIndustryBestPractices(sanitizedContent, sanitizedIndustry),
+        { methodologyReferences: [], professionalStandards: [], industryFrameworks: [], establishedPractices: [], complianceAdherence: [], bestPracticeScore: 0 }
+      );
+
+      const overallAuthorityScore = this.safelyExecute(() =>
         this.calculateOverallAuthorityScore({
           knowledgeDepth,
           technicalSophistication,
@@ -306,10 +313,11 @@ export class ExpertAuthorityValidator {
           expertInsights,
           problemSolvingMaturity,
           industryBestPractices
-        })
+        }),
+        0
       );
 
-      const recommendations = this.safelyExecute(() => 
+      const recommendations = this.safelyExecute(() =>
         this.generateRecommendations({
           knowledgeDepth,
           technicalSophistication,
@@ -318,7 +326,8 @@ export class ExpertAuthorityValidator {
           expertInsights,
           problemSolvingMaturity,
           industryBestPractices
-        })
+        }),
+        []
       );
 
       return {

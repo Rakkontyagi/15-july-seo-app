@@ -43,7 +43,7 @@ export class UserIntentAnalyzer {
     const totalSignals = Object.values(intentScores).reduce((sum, score) => sum + score, 0);
     const intentConfidence = totalSignals > 0 ? (intentScores[primaryIntent] / totalSignals) : 0;
 
-    const contentRequirements = this.generateContentRequirements(primaryIntent);
+    const contentRequirements = intentConfidence > 0 ? this.generateContentRequirements(primaryIntent) : [];
 
     return {
       primaryIntent,

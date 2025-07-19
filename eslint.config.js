@@ -40,6 +40,8 @@ module.exports = [
         afterEach: 'readonly',
         beforeAll: 'readonly',
         afterAll: 'readonly',
+        Blob: 'readonly',
+        URLSearchParams: 'readonly',
       },
     },
     rules: {

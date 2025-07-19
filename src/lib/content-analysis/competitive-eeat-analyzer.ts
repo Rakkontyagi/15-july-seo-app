@@ -226,7 +226,22 @@ export class CompetitiveEEATAnalyzer {
     competitors: CompetitorAnalysis[],
     benchmarks: IndustryBenchmarks
   ): GapAnalysis {
-    const topCompetitor = competitors.reduce((top, comp) => 
+    // Handle empty competitors array
+    if (competitors.length === 0) {
+      return {
+        experienceGap: 0,
+        expertiseGap: 0,
+        authoritativenessGap: 0,
+        trustworthinessGap: 0,
+        overallGap: 0,
+        strengths: ['No competitors to compare against'],
+        weaknesses: ['Unable to perform competitive analysis'],
+        opportunities: ['Establish market leadership'],
+        threats: ['Unknown competitive landscape']
+      };
+    }
+
+    const topCompetitor = competitors.reduce((top, comp) =>
       comp.eeatScore.overallScore > top.eeatScore.overallScore ? comp : top
     );
     

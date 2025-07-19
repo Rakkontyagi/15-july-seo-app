@@ -157,11 +157,11 @@ export class LSIKeywordIntegrator {
     const terms: LSIKeyword[] = [];
 
     // Extract nouns and adjectives as potential LSI terms
-    const nouns = doc.match('#Noun').out('array');
-    const adjectives = doc.match('#Adjective').out('array');
-    const verbs = doc.match('#Verb').out('array');
+    const nouns = doc.match('#Noun').json().map((item: any) => item.text || '');
+    const adjectives = doc.match('#Adjective').json().map((item: any) => item.text || '');
+    const verbs = doc.match('#Verb').json().map((item: any) => item.text || '');
 
-    const allTerms = [...nouns, ...adjectives, ...verbs];
+    const allTerms = [...nouns, ...adjectives, ...verbs].filter(term => term.length > 0);
 
     // Calculate relevance and semantic scores
     allTerms.forEach(term => {

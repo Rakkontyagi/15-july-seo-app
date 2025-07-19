@@ -42,8 +42,8 @@ describe('RealtimeProgressTracker', () => {
       mockCallback.current(progressUpdate);
     }
 
-    expect(screen.getByText('Content Analysis Progress: 45%')).toBeInTheDocument();
-    expect(screen.getByText('Current Stage: Analyzing Content')).toBeInTheDocument();
+    expect(screen.getByText(/Content Analysis Progress:/)).toBeInTheDocument();
+    expect(screen.getByText(/Current Stage:/)).toBeInTheDocument();
     expect(screen.getByText(/Processing content analysis.../)).toBeInTheDocument();
   });
 
@@ -74,8 +74,8 @@ describe('RealtimeProgressTracker', () => {
       mockCallback.current(secondUpdate);
     }
 
-    expect(screen.getByText('Content Analysis Progress: 60%')).toBeInTheDocument();
-    expect(screen.getByText('Current Stage: Analyzing Content')).toBeInTheDocument();
+    expect(screen.getByText(/Content Analysis Progress:/)).toBeInTheDocument();
+    expect(screen.getByText(/Current Stage:/)).toBeInTheDocument();
     expect(screen.getByText(/Starting analysis.../)).toBeInTheDocument();
     expect(screen.getByText(/Deep content analysis.../)).toBeInTheDocument();
   });

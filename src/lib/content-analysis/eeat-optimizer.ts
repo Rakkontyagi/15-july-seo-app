@@ -172,7 +172,10 @@ export class EEATOptimizer {
       const regex = new RegExp(`\\b${marker.phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
       const matches = content.match(regex);
       if (matches) {
-        foundMarkers.push(marker.phrase);
+        // Store the actual matched text with proper capitalization
+        matches.forEach(match => {
+          foundMarkers.push(match);
+        });
         totalWeight += marker.weight * matches.length;
       }
     });
