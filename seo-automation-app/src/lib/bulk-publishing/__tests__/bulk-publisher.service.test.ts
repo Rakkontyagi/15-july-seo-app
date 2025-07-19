@@ -1,19 +1,132 @@
 import { BulkPublisherService } from '../bulk-publisher.service';
 import { CMSPlatform } from '@/types/cms';
 
-// Mock CMS services
-jest.mock('@/lib/cms/wordpress.service', () => ({ WordPressService: jest.fn().mockImplementation(() => ({ publish: jest.fn().mockResolvedValue({ success: true, platform: 'wordpress', contentId: 'wp-1', url: 'https://wp.com/1' }) })) }));
-jest.mock('@/lib/cms/shopify.service', () => ({ ShopifyService: jest.fn().mockImplementation(() => ({ publish: jest.fn().mockResolvedValue({ success: true, platform: 'shopify', contentId: 'sh-1', url: 'https://shopify.com/1' }) })) }));
-jest.mock('@/lib/cms/hubspot.service', () => ({ HubSpotService: jest.fn().mockImplementation(() => ({ publish: jest.fn().mockResolvedValue({ success: true, platform: 'hubspot', contentId: 'hs-1', url: 'https://hubspot.com/1' }) })) }));
+// Create comprehensive mocks using manual mocking approach
+const mockCMSServices = {
+  wordpress: {
+    publish: jest.fn().mockImplementation(async (content, options) => {
+      console.log('WordPress publish mock called with:', content, options);
+      const result = {
+        success: true,
+        platform: 'wordpress',
+        contentId: 'wp-1',
+        url: 'https://wp.com/1'
+      };
+      console.log('WordPress publish mock returning:', result);
+      return result;
+    }),
+    validateCredentials: jest.fn().mockResolvedValue(true),
+    update: jest.fn(),
+    delete: jest.fn(),
+    getContent: jest.fn(),
+    listContent: jest.fn(),
+    getSyncStatus: jest.fn()
+  },
+  shopify: {
+    publish: jest.fn().mockImplementation(async (content, options) => {
+      console.log('Shopify publish mock called with:', content, options);
+      const result = {
+        success: true,
+        platform: 'shopify',
+        contentId: 'sh-1',
+        url: 'https://shopify.com/1'
+      };
+      console.log('Shopify publish mock returning:', result);
+      return result;
+    }),
+    validateCredentials: jest.fn().mockResolvedValue(true),
+    update: jest.fn(),
+    delete: jest.fn(),
+    getContent: jest.fn(),
+    listContent: jest.fn(),
+    getSyncStatus: jest.fn()
+  },
+  hubspot: {
+    publish: jest.fn().mockImplementation(async (content, options) => {
+      console.log('HubSpot publish mock called with:', content, options);
+      const result = {
+        success: true,
+        platform: 'hubspot',
+        contentId: 'hs-1',
+        url: 'https://hubspot.com/1'
+      };
+      console.log('HubSpot publish mock returning:', result);
+      return result;
+    }),
+    validateCredentials: jest.fn().mockResolvedValue(true),
+    update: jest.fn(),
+    delete: jest.fn(),
+    getContent: jest.fn(),
+    listContent: jest.fn(),
+    getSyncStatus: jest.fn()
+  }
+};
+
+// Mock the service classes with factory functions
+jest.mock('@/lib/cms/wordpress.service', () => ({
+  WordPressService: jest.fn().mockImplementation(() => mockCMSServices.wordpress)
+}));
+
+jest.mock('@/lib/cms/shopify.service', () => ({
+  ShopifyService: jest.fn().mockImplementation(() => mockCMSServices.shopify)
+}));
+
+jest.mock('@/lib/cms/hubspot.service', () => ({
+  HubSpotService: jest.fn().mockImplementation(() => mockCMSServices.hubspot)
+}));
 
 describe('BulkPublisherService', () => {
   let service: BulkPublisherService;
 
   beforeEach(() => {
-    service = new BulkPublisherService();
+    // Clear all mock calls before each test
+    jest.clearAllMocks();
+
+    // Create service with mock factory
+    const mockServiceFactory = (platform: CMSPlatform, credentials: any) => {
+      switch (platform) {
+        case 'wordpress':
+          return mockCMSServices.wordpress as any;
+        case 'shopify':
+          return mockCMSServices.shopify as any;
+        case 'hubspot':
+          return mockCMSServices.hubspot as any;
+        default:
+          throw new Error(`Unsupported platform: ${platform}`);
+      }
+    };
+
+    service = new BulkPublisherService(mockServiceFactory);
+  });
+
+  afterEach(() => {
+    // Clean up any timers or async operations
+    jest.clearAllTimers();
   });
 
   it('creates a bulk publish job and tracks progress', async () => {
+    // Set up successful mocks for all platforms
+    mockCMSServices.wordpress.publish.mockResolvedValue({
+      success: true,
+      platform: 'wordpress',
+      contentId: 'wp-1',
+      url: 'https://wp.com/1'
+    });
+
+    mockCMSServices.shopify.publish.mockResolvedValue({
+      success: true,
+      platform: 'shopify',
+      contentId: 'sh-1',
+      url: 'https://shopify.com/1'
+    });
+
+    mockCMSServices.hubspot.publish.mockResolvedValue({
+      success: true,
+      platform: 'hubspot',
+      contentId: 'hs-1',
+      url: 'https://hubspot.com/1'
+    });
+
     const request = {
       id: 'bulk-1',
       userId: 'user-1',
@@ -39,17 +152,35 @@ describe('BulkPublisherService', () => {
   });
 
   it('handles platform publish errors and retries', async () => {
-    // Override WordPressService to fail first, then succeed
-    const WordPressService = require('@/lib/cms/wordpress.service').WordPressService;
+    // Create mock service factory for this test
+    const testMockServiceFactory = (platform: CMSPlatform, credentials: any) => {
+      switch (platform) {
+        case 'wordpress':
+          return mockCMSServices.wordpress as any;
+        case 'shopify':
+          return mockCMSServices.shopify as any;
+        case 'hubspot':
+          return mockCMSServices.hubspot as any;
+        default:
+          throw new Error(`Unsupported platform: ${platform}`);
+      }
+    };
+
+    // Create a service with shorter retry delay for testing
+    const testService = new BulkPublisherService(testMockServiceFactory);
+    // Override the retry delay to be shorter for testing
+    (testService as any).retryDelayMs = 100; // 100ms instead of 5000ms
+
+    // Set up WordPress mock to throw retryable error first, then succeed
     let callCount = 0;
-    WordPressService.mockImplementation(() => ({
-      publish: jest.fn().mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) return Promise.resolve({ success: false, platform: 'wordpress', error: 'fail' });
-        return Promise.resolve({ success: true, platform: 'wordpress', contentId: 'wp-2', url: 'https://wp.com/2' });
-      })
-    }));
-    service = new BulkPublisherService();
+    mockCMSServices.wordpress.publish.mockImplementation(async () => {
+      callCount++;
+      if (callCount === 1) {
+        throw new Error('NETWORK_ERROR: Connection failed');
+      }
+      return { success: true, platform: 'wordpress', contentId: 'wp-2', url: 'https://wp.com/2' };
+    });
+
     const request = {
       id: 'bulk-2',
       userId: 'user-2',
@@ -62,9 +193,10 @@ describe('BulkPublisherService', () => {
       createdAt: new Date(),
       status: 'pending',
     };
-    const bulkId = await service.createBulkPublishJob(request);
+    const bulkId = await testService.createBulkPublishJob(request);
+    // Wait for retry logic (queue processor runs every 1000ms + retry delay)
     await new Promise(res => setTimeout(res, 2500));
-    const progress = await service.getBulkProgress(bulkId);
+    const progress = await testService.getBulkProgress(bulkId);
     expect(progress).toBeTruthy();
     expect(progress?.completedPlatforms).toBe(1);
     expect(progress?.platformResults[0].retryCount).toBeGreaterThan(0);
@@ -72,12 +204,13 @@ describe('BulkPublisherService', () => {
   });
 
   it('marks job as failed if all platforms fail', async () => {
-    // All platforms fail
-    const ShopifyService = require('@/lib/cms/shopify.service').ShopifyService;
-    ShopifyService.mockImplementation(() => ({
-      publish: jest.fn().mockResolvedValue({ success: false, platform: 'shopify', error: 'fail' })
-    }));
-    service = new BulkPublisherService();
+    // Set up Shopify mock to always fail
+    mockCMSServices.shopify.publish.mockResolvedValue({
+      success: false,
+      platform: 'shopify',
+      error: 'Simulated failure'
+    });
+
     const request = {
       id: 'bulk-3',
       userId: 'user-3',

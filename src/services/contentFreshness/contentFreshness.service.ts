@@ -86,7 +86,14 @@ export class ContentFreshnessService {
       content.toLowerCase().includes(keyword.toLowerCase())
     );
 
-    if (hasCurrentLanguage) score += 20;
+    if (hasCurrentLanguage) {
+      score += 20;
+      // Extra bonus for multiple current language indicators
+      const currentPhraseCount = this.datePhrases.filter(phrase =>
+        content.toLowerCase().includes(phrase.toLowerCase())
+      ).length;
+      if (currentPhraseCount >= 2) score += 5;
+    }
     if (hasOutdatedLanguage) score -= 30;
 
     // Factor in last updated date if provided
@@ -166,6 +173,8 @@ export class ContentFreshnessService {
       { old: /\bpreviously\b/gi, new: 'historically', suggestion: 'Replaced vague time reference' },
       { old: /\brecently announced\b/gi, new: 'as announced', suggestion: 'Updated announcement reference' },
       { old: /\bupcoming\b/gi, new: 'current', suggestion: 'Updated future reference to present tense' },
+      { old: /\bsoon\b/gi, new: 'currently', suggestion: 'Updated vague future reference to present tense' },
+      { old: /will be released soon/gi, new: 'is currently available', suggestion: 'Updated release status to current' },
     ];
 
     for (const replacement of timeReplacements) {

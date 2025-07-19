@@ -25,9 +25,11 @@ export class BulkPublisherService extends EventEmitter {
   private isProcessing: boolean = false;
   private maxConcurrentJobs: number = 3;
   private retryDelayMs: number = 5000; // 5 seconds default
+  private serviceFactory?: (platform: CMSPlatform, credentials: any) => BaseCMSService;
 
-  constructor() {
+  constructor(serviceFactory?: (platform: CMSPlatform, credentials: any) => BaseCMSService) {
     super();
+    this.serviceFactory = serviceFactory;
     this.startQueueProcessor();
   }
 
@@ -363,10 +365,13 @@ export class BulkPublisherService extends EventEmitter {
 
       // Handle retry logic
       if (item.attempts < item.maxRetries && this.isRetryableError(error)) {
+        // Increment attempts counter
+        item.attempts++;
+
         // Schedule retry
         item.status = 'queued';
         item.scheduledAt = new Date(Date.now() + this.retryDelayMs * item.attempts);
-        
+
         if (platformResult) {
           platformResult.retryCount++;
         }
@@ -403,6 +408,12 @@ export class BulkPublisherService extends EventEmitter {
   }
 
   private getCMSService(platform: CMSPlatform, credentials: any): BaseCMSService {
+    // Use injected factory if available (for testing)
+    if (this.serviceFactory) {
+      return this.serviceFactory(platform, credentials);
+    }
+
+    // Default production implementation
     switch (platform) {
       case 'wordpress':
         return new WordPressService(credentials);

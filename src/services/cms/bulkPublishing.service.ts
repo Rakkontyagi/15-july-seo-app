@@ -75,13 +75,10 @@ export class BulkPublishingService implements IBulkPublishingService {
     };
 
     this.jobs.set(jobId, job);
-    
-    // Add to queue based on priority
-    this.addToQueue(jobId, input.priority);
-    
-    // Start processing if not already running
-    if (!this.isProcessing) {
-      this.processQueue();
+
+    // Only add to queue if not scheduled (immediate execution)
+    if (!input.scheduledDate) {
+      this.addToQueue(jobId, input.priority);
     }
 
     return job;
@@ -297,6 +294,7 @@ export class BulkPublishingService implements IBulkPublishingService {
     const totalItems = job.contentIds.length * job.platforms.length;
     let completed = 0;
     let failed = 0;
+    const errors: Error[] = [];
 
     for (const contentId of job.contentIds) {
       for (const platform of job.platforms) {
@@ -306,6 +304,7 @@ export class BulkPublishingService implements IBulkPublishingService {
           completed++;
         } catch (error) {
           failed++;
+          errors.push(error as Error);
           console.error(`Failed to publish content ${contentId} to ${platform}:`, error);
         }
 
@@ -320,6 +319,11 @@ export class BulkPublishingService implements IBulkPublishingService {
         this.jobs.set(job.id, job);
       }
     }
+
+    // If there were any errors, throw the first one to fail the job
+    if (errors.length > 0) {
+      throw errors[0];
+    }
   }
 
   /**
@@ -327,14 +331,10 @@ export class BulkPublishingService implements IBulkPublishingService {
    * In real implementation, this would integrate with actual CMS services.
    */
   private async publishToplatform(contentId: string, platform: CMSPlatform): Promise<void> {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500));
+    // Simulate API call delay (reduced for faster tests)
+    await new Promise(resolve => setTimeout(resolve, Math.random() * 100 + 50));
 
-    // Simulate occasional failures for testing
-    if (Math.random() < 0.05) { // 5% failure rate
-      throw new Error(`Simulated failure publishing to ${platform}`);
-    }
-
+    // Only fail if explicitly mocked in tests
     console.log(`Successfully published content ${contentId} to ${platform}`);
   }
 
@@ -351,10 +351,10 @@ export class BulkPublishingService implements IBulkPublishingService {
   async scheduleJobs(): Promise<void> {
     const now = new Date();
     const jobs = Array.from(this.jobs.values());
-    
-    const scheduledJobs = jobs.filter(job => 
-      job.status === 'pending' && 
-      job.scheduledDate && 
+
+    const scheduledJobs = jobs.filter(job =>
+      job.status === 'pending' &&
+      job.scheduledDate &&
       job.scheduledDate <= now &&
       !this.jobQueue.includes(job.id)
     );
@@ -364,7 +364,7 @@ export class BulkPublishingService implements IBulkPublishingService {
     }
 
     if (scheduledJobs.length > 0 && !this.isProcessing) {
-      this.processQueue();
+      await this.processQueue();
     }
   }
 }
