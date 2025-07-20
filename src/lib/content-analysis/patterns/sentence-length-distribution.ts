@@ -1,5 +1,5 @@
 
-import nlp from 'compromise';
+import compromise from 'compromise';
 import { LengthDistribution } from '../../../types/content-analysis';
 
 /**
@@ -7,7 +7,7 @@ import { LengthDistribution } from '../../../types/content-analysis';
  * Human writing typically has more varied sentence lengths
  */
 export function analyzeSentenceLengthDistribution(content: string): LengthDistribution {
-  const doc = nlp(content);
+  const doc = compromise(content);
   const sentences = doc.sentences().json();
 
   if (sentences.length === 0) {

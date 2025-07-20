@@ -1,6 +1,6 @@
 
 import { SentenceTokenizer, WordTokenizer } from 'natural';
-import * as compromise from 'compromise';
+import compromise from 'compromise';
 
 export interface HeadingStructure {
   level: 1 | 2 | 3 | 4 | 5 | 6;
@@ -59,7 +59,11 @@ export class HeadingOptimizer {
    */
   countHeadings(content: string): HeadingCounts {
     const counts: HeadingCounts = { h1: 0, h2: 0, h3: 0, h4: 0, h5: 0, h6: 0 };
-    
+
+    if (!content || content.trim().length === 0) {
+      return counts;
+    }
+
     // HTML heading patterns
     const htmlPatterns = {
       h1: /<h1[^>]*>(.*?)<\/h1>/gi,
@@ -70,14 +74,14 @@ export class HeadingOptimizer {
       h6: /<h6[^>]*>(.*?)<\/h6>/gi
     };
 
-    // Markdown heading patterns
+    // Markdown heading patterns - more flexible with whitespace
     const markdownPatterns = {
-      h1: /^# .+$/gm,
-      h2: /^## .+$/gm,
-      h3: /^### .+$/gm,
-      h4: /^#### .+$/gm,
-      h5: /^##### .+$/gm,
-      h6: /^###### .+$/gm
+      h1: /^\s*#\s+.+$/gm,
+      h2: /^\s*##\s+.+$/gm,
+      h3: /^\s*###\s+.+$/gm,
+      h4: /^\s*####\s+.+$/gm,
+      h5: /^\s*#####\s+.+$/gm,
+      h6: /^\s*######\s+.+$/gm
     };
 
     // Count HTML headings
@@ -88,8 +92,10 @@ export class HeadingOptimizer {
 
     // Count Markdown headings
     Object.keys(markdownPatterns).forEach(level => {
-      const matches = content.match(markdownPatterns[level as keyof typeof markdownPatterns]);
-      counts[level as keyof HeadingCounts] += matches ? matches.length : 0;
+      const pattern = markdownPatterns[level as keyof typeof markdownPatterns];
+      const matches = content.match(pattern);
+      const matchCount = matches ? matches.length : 0;
+      counts[level as keyof HeadingCounts] += matchCount;
     });
 
     return counts;
@@ -101,9 +107,9 @@ export class HeadingOptimizer {
   countKeywordHeadings(content: string, keyword: string): KeywordHeadingCounts {
     const keywordCounts: KeywordHeadingCounts = { h1: 0, h2: 0, h3: 0, h4: 0, h5: 0, h6: 0 };
     const headings = this.extractHeadings(content);
-    
+
     headings.forEach(heading => {
-      if (heading.hasKeyword && heading.text.toLowerCase().includes(keyword.toLowerCase())) {
+      if (heading.text.toLowerCase().includes(keyword.toLowerCase())) {
         keywordCounts[`h${heading.level}` as keyof KeywordHeadingCounts]++;
       }
     });
@@ -256,7 +262,7 @@ export class HeadingOptimizer {
     const lines = content.split('\n');
 
     lines.forEach((line, index) => {
-      const match = line.match(/^(#{1,6})\s+(.+)$/);
+      const match = line.match(/^\s*(#{1,6})\s+(.+)$/);
       if (match) {
         const level = match[1].length as 1 | 2 | 3 | 4 | 5 | 6;
         const text = match[2].trim();

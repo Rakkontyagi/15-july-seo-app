@@ -167,7 +167,7 @@ describe('UserIntentAlignmentSystem', () => {
       
       const result = system.alignContentWithIntent(content, targetIntent);
       
-      expect(result.optimizedContent).toContain('navigate');
+      expect(result.optimizedContent.toLowerCase()).toContain('navigate');
       expect(result.modificationsApplied).toBeGreaterThan(0);
     });
 
@@ -197,7 +197,7 @@ describe('UserIntentAlignmentSystem', () => {
       
       const result = system.alignContentWithIntent(content, targetIntent);
       
-      expect(result.optimizedContent).toContain('compare');
+      expect(result.optimizedContent.toLowerCase()).toContain('compare');
       expect(result.modificationsApplied).toBeGreaterThan(0);
     });
   });

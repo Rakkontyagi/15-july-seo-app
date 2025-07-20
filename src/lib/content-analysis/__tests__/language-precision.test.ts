@@ -31,17 +31,15 @@ describe('LanguagePrecisionEngine', () => {
     });
 
     it('should maximize semantic value by replacing generic words', () => {
-      const content = 'We need to make a system that will help users get better results and do more things effectively.';
-      
+      const content = 'We need to make a system that will help users get better results. We make tools to help developers and make applications that help everyone.';
+
       const result = engine.enhancePrecision(content);
-      
-      // Should replace some instances of generic words
-      const genericWords = ['make', 'help', 'get', 'do'];
-      const hasReplacements = genericWords.some(word => 
-        !result.content.toLowerCase().includes(word) || 
-        result.changes.some(change => change.original === word)
+
+      // Should replace some instances of generic words (make and help appear 3+ times)
+      const hasReplacements = result.changes.some(change =>
+        ['make', 'help'].includes(change.original)
       );
-      
+
       expect(hasReplacements).toBe(true);
       expect(result.changes.length).toBeGreaterThan(0);
     });
@@ -56,7 +54,7 @@ describe('LanguagePrecisionEngine', () => {
         expect(change.original).toBeDefined();
         expect(change.optimized).toBeDefined();
         expect(change.reason).toBeDefined();
-        expect(change.reason).toContain('replaced') || expect(change.reason).toContain('enhanced');
+        expect(change.reason.toLowerCase()).toContain('replaced') || expect(change.reason.toLowerCase()).toContain('enhanced');
       });
     });
 

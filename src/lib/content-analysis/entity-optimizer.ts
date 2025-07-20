@@ -1,6 +1,6 @@
 
 import { SentenceTokenizer, WordTokenizer } from 'natural';
-import * as compromise from 'compromise';
+import compromise from 'compromise';
 
 export interface Entity {
   name: string;
@@ -601,8 +601,14 @@ export class EntityOptimizer {
   private calculateAuthorityEnhancement(original: string, optimized: string): number {
     const originalAuthorityScore = this.calculateContentAuthorityScore(original);
     const optimizedAuthorityScore = this.calculateContentAuthorityScore(optimized);
-    
-    return ((optimizedAuthorityScore - originalAuthorityScore) / originalAuthorityScore) * 100;
+
+    // Avoid division by zero
+    if (originalAuthorityScore === 0) {
+      return optimizedAuthorityScore > 0 ? 100 : 0;
+    }
+
+    const enhancement = ((optimizedAuthorityScore - originalAuthorityScore) / originalAuthorityScore) * 100;
+    return isNaN(enhancement) ? 0 : enhancement;
   }
 
   private calculateContentAuthorityScore(content: string): number {

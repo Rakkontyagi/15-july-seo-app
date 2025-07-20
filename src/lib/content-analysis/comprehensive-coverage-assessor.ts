@@ -85,4 +85,57 @@ export class ComprehensiveCoverageAssessor {
 
     return recommendations;
   }
+
+  /**
+   * Assesses how completely the content covers the required topics
+   */
+  assessTopicCompleteness(content: string, requiredTopics: string[]): number {
+    if (!content || content.trim().length === 0) {
+      return 0;
+    }
+
+    if (!requiredTopics || requiredTopics.length === 0) {
+      return 1.0;
+    }
+
+    const contentLower = content.toLowerCase();
+    const uniqueTopics = [...new Set(requiredTopics)]; // Remove duplicates
+    let coveredTopics = 0;
+
+    for (const topic of uniqueTopics) {
+      const topicLower = topic.toLowerCase();
+      // Check for exact topic match or partial match with context
+      if (contentLower.includes(topicLower)) {
+        coveredTopics++;
+      }
+    }
+
+    return coveredTopics / uniqueTopics.length;
+  }
+
+  /**
+   * Identifies information gaps by finding topics not covered in the content
+   */
+  identifyInformationGaps(content: string, requiredTopics: string[]): string[] {
+    if (!content || content.trim().length === 0) {
+      return [...requiredTopics]; // All topics are gaps if no content
+    }
+
+    if (!requiredTopics || requiredTopics.length === 0) {
+      return [];
+    }
+
+    const contentLower = content.toLowerCase();
+    const gaps: string[] = [];
+
+    for (const topic of requiredTopics) {
+      const topicLower = topic.toLowerCase();
+      // Check for exact topic match or partial match with context
+      if (!contentLower.includes(topicLower)) {
+        gaps.push(topic);
+      }
+    }
+
+    return gaps;
+  }
 }

@@ -98,6 +98,43 @@ export class TrustSignalScorer {
   }
 
   scoreTrustSignals(content: string, urls?: string[]): TrustSignalScore {
+    // Handle empty content
+    if (!content || content.trim().length === 0) {
+      return {
+        overallScore: 0,
+        eeatCompliance: {
+          experience: 0,
+          expertise: 0,
+          authoritativeness: 0,
+          trustworthiness: 0
+        },
+        signalStrength: {
+          credibilityMarkers: 0,
+          sourceAuthority: 0,
+          transparencyLevel: 0,
+          professionalIndicators: 0
+        },
+        qualityMetrics: {
+          factualAccuracy: 0,
+          sourceReliability: 0,
+          contentDepth: 0,
+          professionalPresentation: 0
+        },
+        opportunities: [
+          'Add substantial content to enable trust signal analysis',
+          'Include credibility markers and professional indicators',
+          'Add authoritative sources and citations',
+          'Demonstrate expertise through detailed explanations'
+        ],
+        recommendations: [
+          'Create comprehensive content with clear expertise demonstration',
+          'Include professional credentials and experience markers',
+          'Add citations from authoritative sources',
+          'Implement transparency and trust-building elements'
+        ]
+      };
+    }
+
     // Analyze all E-E-A-T components
     const eeatAnalysis = this.eeatOptimizer.analyzeEEAT(content);
     const expertiseValidation = this.expertiseValidator.validateExpertise(content);

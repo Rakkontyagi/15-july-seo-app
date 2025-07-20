@@ -1293,4 +1293,14 @@ export class InternalHumanizationEngine {
 
     return Math.min(markerCount / 3, 1); // Normalize to 0-1
   }
+
+  /**
+   * Calculates variance for a set of numbers
+   */
+  private calculateVariance(values: number[], mean: number): number {
+    if (values.length === 0) return 0;
+
+    const squaredDifferences = values.map(value => Math.pow(value - mean, 2));
+    return squaredDifferences.reduce((sum, diff) => sum + diff, 0) / values.length;
+  }
 }

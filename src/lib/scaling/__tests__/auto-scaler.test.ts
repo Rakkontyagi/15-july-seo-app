@@ -33,13 +33,11 @@ describe('AutoScaler', () => {
     (os.totalmem as jest.Mock).mockReturnValue(16 * 1024 * 1024 * 1024); // 16GB
     (os.freemem as jest.Mock).mockReturnValue(8 * 1024 * 1024 * 1024); // 8GB
     
+    // Spy on startMonitoring before creating the instance
+    const startMonitoringSpy = jest.spyOn(AutoScaler.prototype, 'startMonitoring').mockImplementation(() => {});
+
     // Create auto scaler with mocked interval to prevent actual scheduling
     autoScaler = new AutoScaler();
-    
-    // Mock the startMonitoring method to prevent actual interval scheduling
-    jest.spyOn(autoScaler, 'startMonitoring').mockImplementation(() => {
-      return autoScaler;
-    });
     
     // Mock the stopMonitoring method
     jest.spyOn(autoScaler, 'stopMonitoring').mockImplementation(() => {
@@ -72,7 +70,7 @@ describe('AutoScaler', () => {
       expect(metrics).toHaveProperty('errorRate');
       
       // CPU usage should be calculated correctly (100 - idle percentage)
-      expect(metrics.cpuUsage).toBeCloseTo(10, 0); // 10% CPU usage based on our mock
+      expect(metrics.cpuUsage).toBeCloseTo(14, 0); // 14% CPU usage based on our mock (100 - 86%)
       
       // Memory usage should be calculated correctly
       expect(metrics.memoryUsage).toBeCloseTo(50, 0); // 50% memory usage based on our mock

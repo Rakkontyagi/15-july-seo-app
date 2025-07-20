@@ -11,9 +11,9 @@ export interface IntentAnalysis {
 export class UserIntentAnalyzer {
   private intentSignals = {
     informational: ['what', 'how', 'why', 'when', 'where', 'guide', 'tutorial', 'explain', 'definition', 'example'],
-    commercial: ['best', 'top', 'review', 'compare', 'vs', 'alternative', 'buy', 'price', 'cost', 'deal', 'discount'],
+    commercial: ['best', 'top', 'review', 'compare', 'vs', 'alternative', 'price', 'cost', 'deal', 'discount'],
     navigational: ['login', 'contact', 'about', 'homepage', 'site', 'brand', 'company'],
-    transactional: ['buy', 'purchase', 'order', 'price', 'cost', 'deal', 'shop', 'coupon', 'sale']
+    transactional: ['buy', 'purchase', 'order', 'shop', 'coupon', 'sale', 'checkout', 'cart', 'payment']
   };
 
   classifyIntent(keyword: string, context: string = ''): IntentAnalysis {

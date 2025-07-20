@@ -1,5 +1,5 @@
 
-import nlp from 'compromise';
+import compromise from 'compromise';
 
 export interface AnchorTextOptions {
   maxVariations?: number;
@@ -118,15 +118,17 @@ export class LSIAnchorTextGenerator {
     });
 
     // LSI keyword variations
-    lsiKeywords.forEach(lsi => {
-      variations.push({
-        text: lsi,
-        type: 'lsi',
-        relevanceScore: this.calculateRelevanceScore(lsi, mainKeyword),
+    if (lsiKeywords && Array.isArray(lsiKeywords)) {
+      lsiKeywords.forEach(lsi => {
+        variations.push({
+          text: lsi,
+          type: 'lsi',
+          relevanceScore: this.calculateRelevanceScore(lsi, mainKeyword),
         overOptimizationRisk: 'low',
         usage: 0
       });
     });
+    }
 
     // Partial match variations
     if (options.includePartialMatches) {
@@ -200,18 +202,32 @@ export class LSIAnchorTextGenerator {
     lsiKeywords: string[]
   ): AnchorTextVariation[] {
     const variations: AnchorTextVariation[] = [];
-    const doc = nlp(mainKeyword);
+    const doc = compromise(mainKeyword);
 
     // Pluralization
-    const plural = doc.nouns().toPlural().text();
-    if (plural !== mainKeyword) {
-      variations.push({
-        text: plural,
-        type: 'natural',
-        relevanceScore: 90,
-        overOptimizationRisk: 'low',
-        usage: 0
-      });
+    try {
+      const plural = doc.nouns().toPlural().text();
+      if (plural && plural !== mainKeyword) {
+        variations.push({
+          text: plural,
+          type: 'natural',
+          relevanceScore: 90,
+          overOptimizationRisk: 'low',
+          usage: 0
+        });
+      }
+    } catch (error) {
+      // Fallback: simple pluralization
+      const simplePlural = mainKeyword.endsWith('s') ? mainKeyword : mainKeyword + 's';
+      if (simplePlural !== mainKeyword) {
+        variations.push({
+          text: simplePlural,
+          type: 'natural',
+          relevanceScore: 90,
+          overOptimizationRisk: 'low',
+          usage: 0
+        });
+      }
     }
 
     // Verb forms

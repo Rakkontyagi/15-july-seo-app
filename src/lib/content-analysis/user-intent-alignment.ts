@@ -1,6 +1,6 @@
 
 import { SentenceTokenizer, WordTokenizer } from 'natural';
-import * as compromise from 'compromise';
+import compromise from 'compromise';
 
 export interface SearchIntent {
   type: 'informational' | 'navigational' | 'transactional' | 'commercial';

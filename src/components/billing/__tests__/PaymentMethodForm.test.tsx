@@ -62,8 +62,8 @@ describe('PaymentMethodForm', () => {
 
     expect(screen.getByText('Payment Method')).toBeInTheDocument();
     expect(screen.getByText('Pro Plan')).toBeInTheDocument();
-    expect(screen.getByText('$49.00')).toBeInTheDocument();
-    expect(screen.getByText('Monthly')).toBeInTheDocument();
+    expect(screen.getAllByText('$49.00')).toHaveLength(2); // Price and Total
+    expect(screen.getByText('monthly')).toBeInTheDocument();
     expect(screen.getByTestId('card-element')).toBeInTheDocument();
   });
 
@@ -71,8 +71,8 @@ describe('PaymentMethodForm', () => {
     const yearlyProps = { ...mockProps, billingCycle: 'yearly' as const };
     render(<PaymentMethodForm {...yearlyProps} />);
 
-    expect(screen.getByText('$490.00')).toBeInTheDocument();
-    expect(screen.getByText('Yearly')).toBeInTheDocument();
+    expect(screen.getAllByText('$490.00')).toHaveLength(2); // Price and Total
+    expect(screen.getByText('yearly')).toBeInTheDocument();
     expect(screen.getByText('-$98.00')).toBeInTheDocument(); // 12 * 49 - 490
   });
 

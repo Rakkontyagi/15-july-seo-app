@@ -15,7 +15,7 @@ export function identifyPredictablePatterns(content: string): PredictablePattern
   patterns.push(...identifyConclusionPatterns(lowerContent, content));
   patterns.push(...identifyFillerPatterns(lowerContent, content));
 
-  return patterns.filter(pattern => pattern.confidence > 0.5);
+  return patterns.filter(pattern => pattern.confidence > 0.4);
 }
 
 function identifyIntroPatterns(lowerContent: string, originalContent: string): PredictablePattern[] {

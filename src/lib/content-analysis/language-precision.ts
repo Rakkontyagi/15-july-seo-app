@@ -96,13 +96,13 @@ export class LanguagePrecisionEngine {
       
       if (matches) {
         const replacement = this.selectContextualReplacement(replacements, optimizedContent, vagueWord);
-        if (replacement) {
+        if (replacement !== null && replacement !== undefined) {
           optimizedContent = optimizedContent.replace(regex, replacement);
           changes.push({
             type: 'precision',
             original: vagueWord,
-            optimized: replacement,
-            reason: `Replaced vague term "${vagueWord}" with more specific "${replacement}"`
+            optimized: replacement || '[removed]',
+            reason: `Replaced vague term "${vagueWord}" with ${replacement ? `more specific "${replacement}"` : 'removal'}`
           });
         }
       }
@@ -124,7 +124,7 @@ export class LanguagePrecisionEngine {
       
       if (matches) {
         const replacement = this.selectContextualReplacement(replacements, optimizedContent, phrase);
-        if (replacement) {
+        if (replacement !== null && replacement !== undefined) {
           optimizedContent = optimizedContent.replace(regex, replacement);
           changes.push({
             type: 'precision',
@@ -152,7 +152,7 @@ export class LanguagePrecisionEngine {
       
       if (matches && matches.length > 2) { // Only replace if word appears frequently
         const replacement = this.selectContextualReplacement(specificWords, optimizedContent, genericWord);
-        if (replacement) {
+        if (replacement !== null && replacement !== undefined && replacement !== '') {
           // Replace only some instances to maintain variety
           let replacementCount = 0;
           optimizedContent = optimizedContent.replace(regex, (match) => {
@@ -242,11 +242,13 @@ export class LanguagePrecisionEngine {
 
     // Find vague words
     words.forEach(word => {
-      if (this.vagueTermReplacements[word]) {
-        vagueWords.push(word);
+      // Clean word of punctuation
+      const cleanWord = word.replace(/[^\w]/g, '');
+      if (this.vagueTermReplacements[cleanWord]) {
+        vagueWords.push(cleanWord);
         suggestions.push({
-          word,
-          suggestions: this.vagueTermReplacements[word],
+          word: cleanWord,
+          suggestions: this.vagueTermReplacements[cleanWord],
           context: 'vague term'
         });
       }

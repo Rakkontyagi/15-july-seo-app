@@ -277,18 +277,27 @@ export class CompetitiveEEATAnalyzer {
     gapAnalysis: GapAnalysis
   ): CompetitiveRecommendation[] {
     const recommendations: CompetitiveRecommendation[] = [];
-    
+
+    // Handle empty competitors array
+    if (competitors.length === 0) {
+      return recommendations;
+    }
+
     // Find best performing competitor for each area
-    const bestExperience = competitors.reduce((best, comp) => 
+    const bestExperience = competitors.reduce((best, comp) =>
       comp.eeatScore.experience > best.eeatScore.experience ? comp : best
     );
-    
-    const bestExpertise = competitors.reduce((best, comp) => 
+
+    const bestExpertise = competitors.reduce((best, comp) =>
       comp.eeatScore.expertise > best.eeatScore.expertise ? comp : best
     );
     
-    const bestAuthority = competitors.reduce((best, comp) => 
+    const bestAuthority = competitors.reduce((best, comp) =>
       comp.eeatScore.authoritativeness > best.eeatScore.authoritativeness ? comp : best
+    );
+
+    const bestTrust = competitors.reduce((best, comp) =>
+      comp.eeatScore.trustworthiness > best.eeatScore.trustworthiness ? comp : best
     );
     
     // Generate recommendations based on gaps
@@ -325,6 +334,18 @@ export class CompetitiveEEATAnalyzer {
         expectedImpact: Math.min(gapAnalysis.authoritativenessGap * 0.9, 18),
         timeToImplement: '1-3 hours',
         resources: ['Research analyst', 'Content editor']
+      });
+    }
+
+    if (gapAnalysis.trustworthinessGap > 10) {
+      recommendations.push({
+        category: 'trust',
+        priority: 'medium',
+        action: 'Improve transparency and add trust signals',
+        competitorExample: `${bestTrust.domain} demonstrates higher trustworthiness with better transparency`,
+        expectedImpact: Math.min(gapAnalysis.trustworthinessGap * 0.6, 12),
+        timeToImplement: '2-4 hours',
+        resources: ['Content editor', 'Legal reviewer']
       });
     }
     

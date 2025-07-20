@@ -13,7 +13,7 @@ export class AIPatternDetector {
   private aiTypicalPhrases: Set<string>;
   private readonly RISK_THRESHOLDS = {
     LOW: 0.3,
-    MEDIUM: 0.6,
+    MEDIUM: 0.5,
     HIGH: 0.8
   };
 

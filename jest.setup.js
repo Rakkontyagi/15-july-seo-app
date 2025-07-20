@@ -8,6 +8,48 @@ Object.assign(global, {
   TextDecoder,
 })
 
+// Mock Next.js Request and Response for API route tests
+global.Request = class MockRequest {
+  constructor(url, options = {}) {
+    this.url = url
+    this.method = options.method || 'GET'
+    this.headers = new Map(Object.entries(options.headers || {}))
+    this.body = options.body
+  }
+
+  async json() {
+    return JSON.parse(this.body || '{}')
+  }
+
+  async text() {
+    return this.body || ''
+  }
+}
+
+global.Response = class MockResponse {
+  constructor(body, options = {}) {
+    this.body = body
+    this.status = options.status || 200
+    this.statusText = options.statusText || 'OK'
+    this.headers = new Map(Object.entries(options.headers || {}))
+  }
+
+  static json(data, options = {}) {
+    return new MockResponse(JSON.stringify(data), {
+      ...options,
+      headers: { 'Content-Type': 'application/json', ...options.headers }
+    })
+  }
+
+  async json() {
+    return JSON.parse(this.body)
+  }
+
+  async text() {
+    return this.body
+  }
+}
+
 // Global test setup - Mock fetch API
 global.fetch = jest.fn(() =>
   Promise.resolve({

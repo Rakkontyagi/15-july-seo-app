@@ -141,18 +141,24 @@ function analyzeLengthPatterns(sentences: any[]): SentenceStructurePattern[] {
   const lengths = sentences.map(s => s.terms ? s.terms.length : 0);
   const patterns: SentenceStructurePattern[] = [];
 
+  if (lengths.length === 0) return patterns;
+
   // Check for very uniform length distribution
   const avgLength = lengths.reduce((sum, len) => sum + len, 0) / lengths.length;
   const variance = lengths.reduce((sum, len) => sum + Math.pow(len - avgLength, 2), 0) / lengths.length;
   const stdDev = Math.sqrt(variance);
 
   // Low variance indicates uniform, potentially AI-generated sentences
-  if (stdDev < 3 && sentences.length > 5) {
+  // Adjusted threshold to be more sensitive for shorter content
+  const threshold = sentences.length > 5 ? 3 : 1.5;
+  const minSentences = sentences.length > 5 ? 5 : 3;
+
+  if (stdDev < threshold && sentences.length >= minSentences) {
     patterns.push({
       pattern: `Uniform sentence length (avg: ${avgLength.toFixed(1)}, std: ${stdDev.toFixed(1)})`,
       frequency: sentences.length,
-      examples: sentences.slice(0, 3).map((s: any) => s.text),
-      riskLevel: Math.max(0, (5 - stdDev) / 5) // Higher risk for lower std dev
+      examples: sentences.slice(0, 3).map((s: any) => s.text || ''),
+      riskLevel: Math.max(0, (threshold - stdDev) / threshold) // Higher risk for lower std dev
     });
   }
 

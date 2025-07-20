@@ -262,11 +262,12 @@ export class ExpertAuthorityValidator {
    * Validates content expertise and provides comprehensive authority analysis
    */
   validateExpertise(content: string, industry: string): AuthorityAnalysis {
+    // Validate and sanitize inputs (let validation errors throw)
+    this.validateInputs(content, industry);
+    const sanitizedContent = this.sanitizeContent(content);
+    const sanitizedIndustry = industry.trim();
+
     try {
-      // Validate and sanitize inputs
-      this.validateInputs(content, industry);
-      const sanitizedContent = this.sanitizeContent(content);
-      const sanitizedIndustry = industry.trim();
 
       // Perform analysis with error handling for each component
       const knowledgeDepth = this.safelyExecute(() =>
@@ -569,6 +570,8 @@ export class ExpertAuthorityValidator {
   private identifyExperienceElements(content: string): ExperienceMarkers {
     const experiencePatterns = [
       { pattern: /in my (\d+|many|several|numerous) years? of experience/gi, type: 'years-experience' as const, weight: 3 },
+      { pattern: /with (\d+|many|several|numerous) years? of experience/gi, type: 'years-experience' as const, weight: 3 },
+      { pattern: /(\d+|many|several|numerous) years? of experience/gi, type: 'years-experience' as const, weight: 2 },
       { pattern: /we encountered a similar (issue|problem|challenge)/gi, type: 'case-study' as const, weight: 2 },
       { pattern: /lessons? learned from/gi, type: 'lesson-learned' as const, weight: 2 },
       { pattern: /based on my experience/gi, type: 'years-experience' as const, weight: 2 },
@@ -579,6 +582,7 @@ export class ExpertAuthorityValidator {
       { pattern: /in practice/gi, type: 'practical-application' as const, weight: 1 },
       { pattern: /through years of/gi, type: 'years-experience' as const, weight: 2 },
       { pattern: /my decades of/gi, type: 'years-experience' as const, weight: 3 },
+      { pattern: /decades of consulting/gi, type: 'years-experience' as const, weight: 3 },
       { pattern: /over the course of my career/gi, type: 'years-experience' as const, weight: 3 }
     ];
 
@@ -640,14 +644,19 @@ export class ExpertAuthorityValidator {
       { pattern: /award-winning/gi, type: 'award' as const, strength: 3 },
       { pattern: /certified professional/gi, type: 'certification' as const, strength: 2 },
       { pattern: /published in/gi, type: 'publication' as const, strength: 3 },
+      { pattern: /published extensively/gi, type: 'publication' as const, strength: 3 },
       { pattern: /leading expert/gi, type: 'recognition' as const, strength: 3 },
+      { pattern: /recognized expert/gi, type: 'recognition' as const, strength: 3 },
+      { pattern: /recognized \w+ expert/gi, type: 'recognition' as const, strength: 3 },
       { pattern: /industry leader/gi, type: 'recognition' as const, strength: 3 },
       { pattern: /recognized authority/gi, type: 'recognition' as const, strength: 3 },
       { pattern: /keynote speaker/gi, type: 'speaking' as const, strength: 2 },
       { pattern: /thought leader/gi, type: 'recognition' as const, strength: 3 },
       { pattern: /subject matter expert/gi, type: 'expertise' as const, strength: 2 },
       { pattern: /board member/gi, type: 'credential' as const, strength: 2 },
-      { pattern: /advisory board/gi, type: 'credential' as const, strength: 2 }
+      { pattern: /advisory board/gi, type: 'credential' as const, strength: 2 },
+      { pattern: /breakthrough insights/gi, type: 'expertise' as const, strength: 2 },
+      { pattern: /unique perspective/gi, type: 'expertise' as const, strength: 2 }
     ];
 
     const indicators: AuthorityIndicator[] = [];
@@ -701,6 +710,8 @@ export class ExpertAuthorityValidator {
   private analyzeInsightQuality(content: string, industry: string): ExpertInsightAnalysis {
     const originalityPatterns = [
       /my unique perspective/gi,
+      /unique perspective/gi,
+      /breakthrough insights/gi,
       /i predict that/gi,
       /a novel approach/gi,
       /our research indicates/gi,
@@ -711,14 +722,18 @@ export class ExpertAuthorityValidator {
       /contrary to popular belief/gi,
       /what most people don't realize/gi,
       /the hidden opportunity/gi,
-      /my contrarian view/gi
+      /my contrarian view/gi,
+      /comprehensive solution/gi,
+      /systematic approach/gi
     ];
 
     const advancedAnalysisPatterns = [
       /deep dive analysis/gi,
       /comprehensive examination/gi,
       /multifaceted approach/gi,
+      /multi-faceted analysis/gi,
       /holistic perspective/gi,
+      /strategic thinking/gi,
       /systematic analysis/gi,
       /root cause analysis/gi,
       /strategic implications/gi,
@@ -1314,21 +1329,24 @@ export class ExpertAuthorityValidator {
     };
 
     const scores = {
-      knowledgeDepth: analysis.knowledgeDepth.score,
-      technicalSophistication: (analysis.technicalSophistication.complexityScore + 
-        analysis.technicalSophistication.advancedConceptIntegration + 
-        analysis.technicalSophistication.technicalDepthValidation + 
-        analysis.technicalSophistication.specializedKnowledgeVerification) / 4,
-      experienceMarkers: Math.min(100, analysis.experienceMarkers.count * 10),
-      authoritySignals: Math.min(100, analysis.authoritySignals.count * 15),
-      expertInsights: analysis.expertInsights.score,
-      problemSolvingMaturity: analysis.problemSolvingMaturity.analyticalThinking,
-      industryBestPractices: analysis.industryBestPractices.bestPracticeScore
+      knowledgeDepth: analysis.knowledgeDepth.score || 0,
+      technicalSophistication: ((analysis.technicalSophistication.complexityScore || 0) +
+        (analysis.technicalSophistication.advancedConceptIntegration || 0) +
+        (analysis.technicalSophistication.technicalDepthValidation || 0) +
+        (analysis.technicalSophistication.specializedKnowledgeVerification || 0)) / 4,
+      experienceMarkers: Math.min(100, (analysis.experienceMarkers.count || 0) * 10),
+      authoritySignals: Math.min(100, (analysis.authoritySignals.count || 0) * 15),
+      expertInsights: analysis.expertInsights.score || 0,
+      problemSolvingMaturity: analysis.problemSolvingMaturity.analyticalThinking || 0,
+      industryBestPractices: analysis.industryBestPractices.bestPracticeScore || 0
     };
 
-    return Math.round(Object.entries(weights).reduce((total, [key, weight]) => {
-      return total + (scores[key as keyof typeof scores] * weight);
-    }, 0) * 100) / 100;
+    const finalScore = Object.entries(weights).reduce((total, [key, weight]) => {
+      const score = scores[key as keyof typeof scores];
+      return total + ((score || 0) * weight);
+    }, 0);
+
+    return Math.round((finalScore || 0) * 100) / 100;
   }
 
   private generateRecommendations(analysis: Omit<AuthorityAnalysis, 'overallAuthorityScore' | 'recommendations'>): string[] {

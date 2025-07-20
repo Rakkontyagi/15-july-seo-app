@@ -75,8 +75,8 @@ export class EEATOptimizer {
 
   analyzeEEAT(content: string): EEATAnalysis {
     const contentLower = content.toLowerCase();
-    
-    const experienceScore = this.assessExperienceMarkers(contentLower);
+
+    const experienceScore = this.assessExperienceMarkers(content); // Use original content to preserve case
     const expertiseScore = this.evaluateExpertiseLevel(contentLower);
     const authorityScore = this.measureAuthoritySignals(contentLower);
     const trustScore = this.analyzeTrustElements(contentLower);

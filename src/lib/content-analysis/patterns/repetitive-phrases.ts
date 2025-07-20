@@ -15,10 +15,27 @@ export function detectRepetitivePhrases(content: string): RepetitivePhrase[] {
     repetitivePhrases.push(...repetitive);
   }
 
-  // Sort by severity and frequency
-  return repetitivePhrases.sort((a, b) => {
+  // Remove shorter phrases that are subsets of longer phrases with same frequency
+  const filteredPhrases = repetitivePhrases.filter((phrase, index) => {
+    return !repetitivePhrases.some((otherPhrase, otherIndex) => {
+      return otherIndex !== index &&
+             otherPhrase.phrase.length > phrase.phrase.length &&
+             otherPhrase.phrase.includes(phrase.phrase) &&
+             otherPhrase.count === phrase.count;
+    });
+  });
+
+  // Sort by severity, then frequency, then prefer shorter phrases
+  return filteredPhrases.sort((a, b) => {
     const severityOrder = { high: 3, medium: 2, low: 1 };
-    return severityOrder[b.severity] - severityOrder[a.severity] || b.count - a.count;
+    const severityDiff = severityOrder[b.severity] - severityOrder[a.severity];
+    if (severityDiff !== 0) return severityDiff;
+
+    const countDiff = b.count - a.count;
+    if (countDiff !== 0) return countDiff;
+
+    // Prefer shorter phrases when everything else is equal
+    return a.phrase.length - b.phrase.length;
   });
 }
 
@@ -67,17 +84,18 @@ function findRepetitivePhrases(phrases: Map<string, number[]>, phraseLength: num
 
 function isSignificantPhrase(phrase: string): boolean {
   const stopWords = new Set([
-    'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
-    'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+    'the', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+    'of', 'with', 'by', 'are', 'was', 'were', 'be', 'been', 'being',
     'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
-    'should', 'may', 'might', 'can', 'this', 'that', 'these', 'those'
+    'should', 'may', 'might', 'can', 'that', 'these', 'those'
   ]);
 
   const words = phrase.split(' ');
   const significantWords = words.filter(word => !stopWords.has(word));
 
-  // Phrase must have at least one significant word
-  return significantWords.length > 0 && phrase.length > 3;
+  // Allow phrases with at least one significant word, or common patterns that might be repetitive
+  // Even if mostly stop words, repetitive patterns can indicate AI generation
+  return (significantWords.length > 0 || words.length >= 3) && phrase.length > 2;
 }
 
 function getMinOccurrences(phraseLength: number): number {
@@ -94,9 +112,10 @@ function getMinOccurrences(phraseLength: number): number {
 function calculateSeverity(count: number, phraseLength: number): 'low' | 'medium' | 'high' {
   const baseThreshold = getMinOccurrences(phraseLength);
 
-  if (count >= baseThreshold * 2) {
+  // More lenient thresholds for better detection
+  if (count >= baseThreshold * 1.5) {
     return 'high';
-  } else if (count >= baseThreshold * 1.5) {
+  } else if (count >= baseThreshold * 1.2) {
     return 'medium';
   } else {
     return 'low';

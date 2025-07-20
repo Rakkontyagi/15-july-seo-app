@@ -170,7 +170,7 @@ describe('EEATOptimizer', () => {
         Stanford University and cited by Search Engine Land, established methodology 
         requires verification from multiple authoritative sources.`;
       
-      const result = optimizer.analyzeEEAT(expertiseContent);
+      const result = optimizer.analyzeEEAT(authorityContent);
       
       // Google values authoritative sources and citations
       expect(result.authoritativeness).toBeGreaterThan(70);

@@ -107,6 +107,20 @@ export class SEOScoringValidation {
    * Calculate comprehensive SEO score
    */
   calculateComprehensiveSEOScore(content: string, keyword: string, competitorData?: any): SEOScoreComponents {
+    // Handle empty content
+    if (!content || content.trim().length === 0) {
+      return {
+        keywordOptimization: 0,
+        contentStructure: 0,
+        readability: 0,
+        technicalSEO: 0,
+        userExperience: 0,
+        competitorAlignment: 0,
+        intentAlignment: 0,
+        overallScore: 0
+      };
+    }
+
     const keywordOptimization = this.calculateKeywordOptimizationScore(content, keyword);
     const contentStructure = this.calculateContentStructureScore(content);
     const readability = this.calculateReadabilityScore(content);
@@ -253,6 +267,13 @@ export class SEOScoringValidation {
    */
   private calculateKeywordOptimizationScore(content: string, keyword: string): number {
     if (!keyword) return 0;
+
+    // Check if keyword exists in content
+    const keywordLower = keyword.toLowerCase();
+    const contentLower = content.toLowerCase();
+    if (!contentLower.includes(keywordLower)) {
+      return 0; // No keyword found, return 0
+    }
 
     let score = 0;
     const maxScore = 100;
@@ -426,15 +447,28 @@ export class SEOScoringValidation {
    * Calculate weighted overall score
    */
   private calculateWeightedOverallScore(scores: Omit<SEOScoreComponents, 'overallScore'>): number {
-    return (
-      scores.keywordOptimization * this.scoringWeights.keywordOptimization +
-      scores.contentStructure * this.scoringWeights.contentStructure +
-      scores.readability * this.scoringWeights.readability +
-      scores.technicalSEO * this.scoringWeights.technicalSEO +
-      scores.userExperience * this.scoringWeights.userExperience +
-      scores.competitorAlignment * this.scoringWeights.competitorAlignment +
-      scores.intentAlignment * this.scoringWeights.intentAlignment
+    // Ensure all scores are valid numbers
+    const safeScores = {
+      keywordOptimization: isNaN(scores.keywordOptimization) ? 0 : scores.keywordOptimization,
+      contentStructure: isNaN(scores.contentStructure) ? 0 : scores.contentStructure,
+      readability: isNaN(scores.readability) ? 0 : scores.readability,
+      technicalSEO: isNaN(scores.technicalSEO) ? 0 : scores.technicalSEO,
+      userExperience: isNaN(scores.userExperience) ? 0 : scores.userExperience,
+      competitorAlignment: isNaN(scores.competitorAlignment) ? 0 : scores.competitorAlignment,
+      intentAlignment: isNaN(scores.intentAlignment) ? 0 : scores.intentAlignment
+    };
+
+    const weightedScore = (
+      safeScores.keywordOptimization * this.scoringWeights.keywordOptimization +
+      safeScores.contentStructure * this.scoringWeights.contentStructure +
+      safeScores.readability * this.scoringWeights.readability +
+      safeScores.technicalSEO * this.scoringWeights.technicalSEO +
+      safeScores.userExperience * this.scoringWeights.userExperience +
+      safeScores.competitorAlignment * this.scoringWeights.competitorAlignment +
+      safeScores.intentAlignment * this.scoringWeights.intentAlignment
     );
+
+    return isNaN(weightedScore) ? 0 : Math.max(0, Math.min(100, weightedScore));
   }
 
   /**

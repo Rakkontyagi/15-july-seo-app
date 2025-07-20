@@ -42,11 +42,36 @@ export class ProblemSolutionAligner {
   };
 
   validateAlignment(content: string, userProblems: string[]): AlignmentAnalysis {
-    if (!content || typeof content !== 'string') {
-      throw new Error('Content must be a non-empty string');
+    if (typeof content !== 'string') {
+      throw new Error('Content must be a string');
     }
     if (!userProblems || !Array.isArray(userProblems)) {
       throw new Error('User problems must be an array');
+    }
+
+    // Handle empty content gracefully
+    if (!content || content.trim().length === 0) {
+      return {
+        problemCoverage: 0,
+        solutionCompleteness: 0,
+        alignmentScore: 0,
+        solutionEffectiveness: 0,
+        identifiedProblems: [],
+        providedSolutions: [],
+        alignmentDetails: {
+          matchedProblems: [],
+          unmatchedProblems: userProblems,
+          solutionGaps: userProblems,
+          strengthAreas: [],
+          improvementAreas: ['Add content to analyze problem-solution alignment']
+        },
+        recommendations: [
+          'Add substantial content that addresses the specified problems',
+          'Include clear problem statements and corresponding solutions',
+          'Ensure each problem has a dedicated solution section'
+        ],
+        processingTime: 0
+      };
     }
 
     const startTime = Date.now();

@@ -162,7 +162,7 @@ export class ImageProcessor {
     switch (type) {
       case 'blur':
         return image
-          .resize(20) // Tiny size
+          .resize(40) // Low-res placeholder size
           .blur(5)
           .toBuffer();
       

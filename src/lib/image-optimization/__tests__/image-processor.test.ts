@@ -156,7 +156,7 @@ describe('ImageProcessor', () => {
 
       expect(result).toBeDefined();
       expect(sharp).toHaveBeenCalledWith(mockBuffer);
-      expect(sharp().resize).toHaveBeenCalledWith(20);
+      expect(sharp().resize).toHaveBeenCalledWith(40);
       expect(sharp().blur).toHaveBeenCalledWith(5);
       expect(sharp().toBuffer).toHaveBeenCalled();
     });

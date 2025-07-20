@@ -153,25 +153,53 @@ export class LSIKeywordIntegrator {
    * Extract LSI terms from content using NLP analysis
    */
   private extractLSITerms(content: string): LSIKeyword[] {
-    const doc = compromise(content);
     const terms: LSIKeyword[] = [];
 
-    // Extract nouns and adjectives as potential LSI terms
-    const nouns = doc.match('#Noun').json().map((item: any) => item.text || '');
-    const adjectives = doc.match('#Adjective').json().map((item: any) => item.text || '');
-    const verbs = doc.match('#Verb').json().map((item: any) => item.text || '');
+    try {
+      const doc = compromise(content);
 
-    const allTerms = [...nouns, ...adjectives, ...verbs].filter(term => term.length > 0);
+      // Extract nouns and adjectives as potential LSI terms
+      const nouns = doc.match('#Noun').json().map((item: any) => item.text || '');
+      const adjectives = doc.match('#Adjective').json().map((item: any) => item.text || '');
+      const verbs = doc.match('#Verb').json().map((item: any) => item.text || '');
+
+      const allTerms = [...nouns, ...adjectives, ...verbs].filter(term => term.length > 0);
+
+      // If compromise didn't find terms, use fallback extraction
+      if (allTerms.length === 0) {
+        return this.extractLSITermsFallback(content);
+      }
+
+      return this.processExtractedTerms(content, allTerms);
+    } catch (error) {
+      // Fallback to simple extraction if compromise fails
+      return this.extractLSITermsFallback(content);
+    }
+  }
+
+  private extractLSITermsFallback(content: string): LSIKeyword[] {
+    const words = content.toLowerCase()
+      .replace(/[^\w\s]/g, ' ')
+      .split(/\s+/)
+      .filter(word => word.length > 3); // Only words longer than 3 characters
+
+    const uniqueWords = [...new Set(words)];
+    return this.processExtractedTerms(content, uniqueWords);
+  }
+
+  private processExtractedTerms(content: string, allTerms: string[]): LSIKeyword[] {
+    const terms: LSIKeyword[] = [];
 
     // Calculate relevance and semantic scores
     allTerms.forEach(term => {
       const frequency = this.calculateTermFrequency(content, term);
       const semanticScore = this.calculateSemanticScore(content, term);
-      
-      if (frequency > 1 && semanticScore >= this.MIN_SEMANTIC_SCORE) {
+
+      // Lower the threshold to ensure we get some results
+      if (frequency >= 1 && semanticScore >= Math.min(this.MIN_SEMANTIC_SCORE, 0.1)) {
         terms.push({
           term: term.toLowerCase(),
-          relevance: frequency / allTerms.length,
+          relevance: frequency / Math.max(allTerms.length, 1),
           semantic_score: semanticScore,
           context_strength: this.calculateContextStrength(content, term)
         });

@@ -38,6 +38,15 @@ export class AdvancedNLPOptimizer {
     const changes: NLPOptimizationResult['changes'] = [];
     let optimizedContent = content;
 
+    // Handle very short content
+    if (!content || content.trim().length < 5) {
+      return {
+        optimizedContent: content,
+        metrics: this.calculateMetrics(content, content),
+        changes: []
+      };
+    }
+
     // 1. Enforce SVO structure
     const svoResult = this.enforceSubjectVerbObject(optimizedContent);
     optimizedContent = svoResult.content;
