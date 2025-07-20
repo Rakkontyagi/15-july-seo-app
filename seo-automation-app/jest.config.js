@@ -36,14 +36,48 @@ const config = {
     '!**/build/**',
     '!**/coverage/**',
   ],
-  coverageReporters: ['text', 'lcov', 'html', 'json'],
+  // Enhanced reporting for Quinn's quality standards
+  coverageReporters: [
+    'text',
+    'text-summary',
+    'html',
+    'lcov',
+    'json-summary',
+    'cobertura',
+  ],
   coverageDirectory: 'coverage',
+  // Quinn's strict coverage thresholds (90% requirement)
   coverageThreshold: {
     global: {
-      branches: 80,
-      functions: 80,
-      lines: 80,
-      statements: 80,
+      branches: 90,
+      functions: 90,
+      lines: 90,
+      statements: 90,
+    },
+    // Critical modules require 95% coverage
+    'src/lib/ai/**/*.ts': {
+      branches: 95,
+      functions: 95,
+      lines: 95,
+      statements: 95,
+    },
+    'src/lib/pipeline/**/*.ts': {
+      branches: 95,
+      functions: 95,
+      lines: 95,
+      statements: 95,
+    },
+    'src/lib/content/**/*.ts': {
+      branches: 95,
+      functions: 95,
+      lines: 95,
+      statements: 95,
+    },
+    'src/lib/monitoring/**/*.ts': {
+      branches: 95,
+      functions: 95,
+      lines: 95,
+      statements: 95,
     },
   },
   testMatch: [
