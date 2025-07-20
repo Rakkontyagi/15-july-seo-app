@@ -1,11 +1,28 @@
+// Enhanced Jest Setup - Implementing Quinn's recommendations
 require('@testing-library/jest-dom')
 require('jest-extended')
 const { TextEncoder, TextDecoder } = require('util')
+
+// Import MSW for API mocking
+const { server } = require('./src/mocks/server')
 
 // Polyfills for Node.js environment
 Object.assign(global, {
   TextEncoder,
   TextDecoder,
+})
+
+// Setup MSW server for all tests
+beforeAll(() => {
+  server.listen({ onUnhandledRequest: 'error' })
+})
+
+afterEach(() => {
+  server.resetHandlers()
+})
+
+afterAll(() => {
+  server.close()
 })
 
 // Mock Next.js Request and Response for API route tests
