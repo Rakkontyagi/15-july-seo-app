@@ -6,6 +6,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { CMSIntegrationManager, type ContentPublishRequest, type CMSConfig } from '@/lib/cms/cms-integration-manager';
+import { WordPressConfig, WordPressPost, SEOMetaData } from '@/lib/cms/wordpress-publisher';
+import { ShopifyConfig, ShopifyProduct } from '@/lib/cms/shopify-publisher';
+import { logger } from '@/lib/logging/logger';
 
 // Request validation schemas
 const cmsConfigSchema = z.object({
@@ -16,6 +19,78 @@ const cmsConfigSchema = z.object({
   password: z.string().optional(),
   customHeaders: z.record(z.string()).optional(),
   version: z.string().optional(),
+  // Enhanced configurations for direct publishing
+  wordpress: z.object({
+    siteUrl: z.string().url(),
+    username: z.string(),
+    applicationPassword: z.string(),
+    defaultAuthor: z.number().optional(),
+    defaultStatus: z.enum(['draft', 'publish', 'pending', 'private']).optional(),
+  }).optional(),
+  shopify: z.object({
+    shopDomain: z.string(),
+    accessToken: z.string(),
+    apiVersion: z.string().optional(),
+  }).optional(),
+});
+
+// Enhanced direct publishing schemas
+const directWordPressSchema = z.object({
+  platform: z.literal('wordpress'),
+  config: z.object({
+    siteUrl: z.string().url(),
+    username: z.string(),
+    applicationPassword: z.string(),
+    defaultAuthor: z.number().optional(),
+    defaultStatus: z.enum(['draft', 'publish', 'pending', 'private']).optional(),
+  }),
+  content: z.object({
+    title: z.string().min(1),
+    content: z.string().min(1),
+    excerpt: z.string().optional(),
+    slug: z.string().optional(),
+    status: z.enum(['draft', 'publish', 'pending', 'private']).optional(),
+    categories: z.array(z.number()).optional(),
+    tags: z.array(z.number()).optional(),
+    meta: z.record(z.any()).optional(),
+  }),
+  seoMeta: z.object({
+    metaTitle: z.string().optional(),
+    metaDescription: z.string().optional(),
+    focusKeyword: z.string().optional(),
+    canonicalUrl: z.string().url().optional(),
+    ogTitle: z.string().optional(),
+    ogDescription: z.string().optional(),
+    ogImage: z.string().url().optional(),
+  }).optional(),
+});
+
+const directShopifySchema = z.object({
+  platform: z.literal('shopify'),
+  config: z.object({
+    shopDomain: z.string(),
+    accessToken: z.string(),
+    apiVersion: z.string().optional(),
+  }),
+  content: z.object({
+    title: z.string().min(1),
+    body_html: z.string().min(1),
+    vendor: z.string().optional(),
+    product_type: z.string().optional(),
+    tags: z.string().optional(),
+    status: z.enum(['active', 'archived', 'draft']).optional(),
+    handle: z.string().optional(),
+    variants: z.array(z.object({
+      title: z.string().optional(),
+      price: z.string(),
+      sku: z.string().optional(),
+      inventory_quantity: z.number().optional(),
+    })).optional(),
+    seo: z.object({
+      title: z.string().optional(),
+      description: z.string().optional(),
+    }).optional(),
+  }),
 });
 
 const publishRequestSchema = z.object({

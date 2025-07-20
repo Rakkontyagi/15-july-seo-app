@@ -1,7 +1,12 @@
 /**
  * CMS Integration Manager
  * Implements NFR10: Universal CMS Integration
+ * Enhanced with direct WordPress and Shopify publishing
  */
+
+import { WordPressPublisher, WordPressConfig, WordPressPost, SEOMetaData } from './wordpress-publisher';
+import { ShopifyPublisher, ShopifyConfig, ShopifyProduct, ShopifyPage } from './shopify-publisher';
+import { logger } from '../logging/logger';
 
 export interface CMSConfig {
   type: 'WORDPRESS' | 'DRUPAL' | 'JOOMLA' | 'SHOPIFY' | 'WEBFLOW' | 'CUSTOM';
@@ -11,6 +16,9 @@ export interface CMSConfig {
   password?: string;
   customHeaders?: Record<string, string>;
   version?: string;
+  // Enhanced configurations
+  wordpress?: WordPressConfig;
+  shopify?: ShopifyConfig;
 }
 
 export interface ContentPublishRequest {
@@ -50,9 +58,101 @@ export interface CMSCapabilities {
 
 export class CMSIntegrationManager {
   private cmsAdapters: Map<string, CMSAdapter> = new Map();
+  private directPublishers: Map<string, WordPressPublisher | ShopifyPublisher> = new Map();
 
   constructor() {
     this.initializeAdapters();
+  }
+
+  /**
+   * ENHANCED: Configure direct WordPress publishing
+   */
+  configureWordPress(id: string, config: WordPressConfig): void {
+    const publisher = new WordPressPublisher(config);
+    this.directPublishers.set(id, publisher);
+    logger.info(`Configured WordPress direct publishing: ${id}`);
+  }
+
+  /**
+   * ENHANCED: Configure direct Shopify publishing
+   */
+  configureShopify(id: string, config: ShopifyConfig): void {
+    const publisher = new ShopifyPublisher(config);
+    this.directPublishers.set(id, publisher);
+    logger.info(`Configured Shopify direct publishing: ${id}`);
+  }
+
+  /**
+   * ENHANCED: Direct publish to WordPress
+   */
+  async publishToWordPress(
+    id: string,
+    post: WordPressPost,
+    seoMeta?: SEOMetaData
+  ): Promise<PublishResult> {
+    try {
+      const publisher = this.directPublishers.get(id) as WordPressPublisher;
+      if (!publisher || !(publisher instanceof WordPressPublisher)) {
+        return {
+          success: false,
+          message: `WordPress publisher not configured: ${id}`,
+          errors: ['Publisher not found'],
+        };
+      }
+
+      const result = await publisher.publishContent(post, seoMeta);
+
+      return {
+        success: result.success,
+        postId: result.postId,
+        url: result.postUrl,
+        message: result.success ? 'Published successfully to WordPress' : result.error || 'Unknown error',
+        errors: result.error ? [result.error] : undefined,
+        warnings: result.warnings,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `WordPress publishing failed: ${(error as Error).message}`,
+        errors: [(error as Error).message],
+      };
+    }
+  }
+
+  /**
+   * ENHANCED: Direct publish to Shopify
+   */
+  async publishToShopify(
+    id: string,
+    product: ShopifyProduct
+  ): Promise<PublishResult> {
+    try {
+      const publisher = this.directPublishers.get(id) as ShopifyPublisher;
+      if (!publisher || !(publisher instanceof ShopifyPublisher)) {
+        return {
+          success: false,
+          message: `Shopify publisher not configured: ${id}`,
+          errors: ['Publisher not found'],
+        };
+      }
+
+      const result = await publisher.publishProduct(product);
+
+      return {
+        success: result.success,
+        postId: result.productId,
+        url: result.productUrl,
+        message: result.success ? 'Published successfully to Shopify' : result.error || 'Unknown error',
+        errors: result.error ? [result.error] : undefined,
+        warnings: result.warnings,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Shopify publishing failed: ${(error as Error).message}`,
+        errors: [(error as Error).message],
+      };
+    }
   }
 
   /**
