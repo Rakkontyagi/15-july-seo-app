@@ -73,7 +73,7 @@ export class HumanWritingPatternAnalyzer {
     }
 
     // Pattern: Lack of contractions
-    const contractions = ['don't', 'can't', 'won't', 'it's', 'they're', 'i'm', 'you're'];
+    const contractions = ["don't", "can't", "won't", "it's", "they're", "i'm", "you're"];
     const hasContractions = contractions.some(c => lowerContent.includes(c));
     if (!hasContractions && words.length > 100) { // Only check for longer content
       aiPatternsDetected.push('Lack of contractions.');
@@ -92,7 +92,7 @@ export class HumanWritingPatternAnalyzer {
     // }
 
     // Pattern: Generic or vague phrasing
-    const genericPhrases = ['in today's world', 'in the modern era', 'it is important to understand', 'unlock the potential'];
+    const genericPhrases = ["in today's world", "in the modern era", "it is important to understand", "unlock the potential"];
     if (genericPhrases.some(phrase => lowerContent.includes(phrase))) {
       aiPatternsDetected.push('Generic or vague phrasing detected.');
       aiDetectionRisk += 10;

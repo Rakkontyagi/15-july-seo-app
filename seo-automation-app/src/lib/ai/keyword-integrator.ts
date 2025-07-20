@@ -232,8 +232,7 @@ export class KeywordIntegrator {
           words.splice(randomIndex, 0, relatedKeyword);
           addedCount++;
         }
-      }
-    } else if (currentCount > targetCount) {
+      } else if (currentCount > targetCount) {
       let removedCount = 0;
       modifiedContent = words.filter(word => {
         if (word.toLowerCase().includes(relatedKeywordLower) && removedCount < (currentCount - targetCount)) {

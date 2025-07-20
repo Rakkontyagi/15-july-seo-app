@@ -23,7 +23,8 @@ import {
   Users,
   HelpCircle,
   LogOut,
-  Zap
+  Zap,
+  Brain
 } from 'lucide-react';
 
 const navigation = [
@@ -39,6 +40,41 @@ const navigation = [
     icon: FileText,
     description: 'AI-powered content creation',
     badge: 'AI'
+  },
+  {
+    name: 'Generate Content',
+    href: '/dashboard/generate',
+    icon: Zap,
+    description: 'Advanced content generation dashboard',
+    badge: 'NEW'
+  },
+  {
+    name: 'Content Editor',
+    href: '/dashboard/editor',
+    icon: FileText,
+    description: 'Real-time content editor with AI assistance',
+    badge: 'AI'
+  },
+  {
+    name: 'Content Optimization',
+    href: '/dashboard/optimize',
+    icon: TrendingUp,
+    description: 'Advanced content optimization and analysis',
+    badge: 'PRO'
+  },
+  {
+    name: 'Analytics & Reports',
+    href: '/dashboard/analytics',
+    icon: BarChart3,
+    description: 'Comprehensive analytics and automated reporting',
+    badge: 'INSIGHTS'
+  },
+  {
+    name: 'AI Lab',
+    href: '/dashboard/ai-lab',
+    icon: Brain,
+    description: 'Advanced AI-powered content tools and insights',
+    badge: 'BETA'
   },
   {
     name: 'Projects',

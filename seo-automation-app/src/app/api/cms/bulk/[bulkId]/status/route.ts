@@ -127,8 +127,8 @@ export async function GET(
     );
   }
 
-  // Helper method to format duration
-  private formatDuration(ms: number): string {
+// Helper function to format duration
+function formatDuration(ms: number): string {
     const seconds = Math.floor(ms / 1000);
     const minutes = Math.floor(seconds / 60);
     const hours = Math.floor(minutes / 60);

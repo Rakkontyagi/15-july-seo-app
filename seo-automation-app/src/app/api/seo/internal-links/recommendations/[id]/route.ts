@@ -185,20 +185,20 @@ async function handler(
     }, { status: 500 });
   }
 
-  // Helper methods
-  private calculateEstimatedImpact(relevanceScore: any): string {
+// Helper functions
+function calculateEstimatedImpact(relevanceScore: any): string {
     if (relevanceScore.score >= 80) return 'high';
     if (relevanceScore.score >= 60) return 'medium';
     return 'low';
   }
 
-  private assessImplementationComplexity(placementsCount: number, anchorsCount: number): string {
+function assessImplementationComplexity(placementsCount: number, anchorsCount: number): string {
     if (placementsCount >= 3 && anchorsCount >= 5) return 'high';
     if (placementsCount >= 2 || anchorsCount >= 3) return 'medium';
     return 'low';
   }
 
-  private getTopCommonTopics(recommendations: any[]): string[] {
+function getTopCommonTopics(recommendations: any[]): string[] {
     const topicCounts: { [topic: string]: number } = {};
     
     recommendations.forEach(rec => {
@@ -213,7 +213,7 @@ async function handler(
       .map(([topic]) => topic);
   }
 
-  private generateActionableInsights(recommendations: any[], analysis: any): string[] {
+function generateActionableInsights(recommendations: any[], analysis: any): string[] {
     const insights = [];
 
     if (recommendations.length === 0) {

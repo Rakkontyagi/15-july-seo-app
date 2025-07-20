@@ -127,6 +127,7 @@
     "dotenv": "^16.6.1",
     "express": "^4.19.2",
     "formidable": "^3.5.1",
+    "googleapis": "^153.0.0",
     "ioredis": "^5.6.1",
     "isomorphic-dompurify": "^2.26.0",
     "jsonwebtoken": "^9.0.2",
@@ -150,7 +151,7 @@
     "web-vitals": "^5.0.3",
     "webpack-bundle-analyzer": "^4.10.2",
     "xml2js": "^0.6.2",
-    "zod": "^3.23.8",
+    "zod": "^3.25.76",
     "zustand": "^5.0.6"
   },
   "lint-staged": {
