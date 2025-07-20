@@ -1,6 +1,30 @@
-# SEO Automation Platform
+# 🚀 SEO Automation Platform
 
 A modern, AI-powered SEO content generation platform built with Next.js 15 and TypeScript.
+
+## 🚀 One-Click Deployment
+
+Deploy your own instance of the SEO Automation Platform to Vercel with one click:
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FRakkontyagi%2F15-july-seo-app&env=NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,SUPABASE_SERVICE_ROLE_KEY,OPENAI_API_KEY,SERPER_API_KEY,FIRECRAWL_API_KEY,NEXTAUTH_SECRET&envDescription=Required%20API%20keys%20and%20configuration%20for%20the%20SEO%20automation%20platform&envLink=https%3A%2F%2Fgithub.com%2FRakkontyagi%2F15-july-seo-app%2Fblob%2Fmain%2FDEPLOYMENT_GUIDE.md&project-name=seo-automation-platform&repository-name=seo-automation-platform)
+
+## 📋 Quick Start
+
+1. **One-Click Deploy**: Click the "Deploy with Vercel" button above
+2. **Configure Environment**: Set up required API keys and configuration
+3. **Start Creating**: Begin generating SEO-optimized content immediately!
+
+## 🛠️ Manual Deployment
+
+For manual deployment and advanced configuration, see our comprehensive [Deployment Guide](./DEPLOYMENT_GUIDE.md).
+
+Or use our automated deployment script:
+
+```bash
+# Make the script executable and run
+chmod +x deploy.sh
+./deploy.sh
+```
 
 ## Features
 
