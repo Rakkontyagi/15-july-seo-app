@@ -77,6 +77,20 @@ const navigation = [
     badge: 'BETA'
   },
   {
+    name: 'Team Collaboration',
+    href: '/dashboard/team',
+    icon: Users,
+    description: 'Manage team projects and collaborative workflows',
+    badge: 'ENTERPRISE'
+  },
+  {
+    name: 'Integrations & API',
+    href: '/dashboard/integrations',
+    icon: Zap,
+    description: 'Connect external services and manage API integrations',
+    badge: 'ENTERPRISE'
+  },
+  {
     name: 'Projects',
     href: '/dashboard/projects',
     icon: FolderOpen,
