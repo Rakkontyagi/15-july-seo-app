@@ -2,334 +2,244 @@
 
 /**
  * Development Data Seeding Script
- * Seeds the database with realistic test data for development
- * Implements Quinn's recommendation for realistic test data generation
+ * Following Quinn's recommendation for realistic test data
+ * 
+ * This script generates comprehensive test data for development including:
+ * - User accounts with different subscription levels
+ * - Sample projects and content
+ * - Analytics data for dashboard testing
+ * - Realistic content generation history
  */
 
 const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config();
+const { faker } = require('@faker-js/faker');
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+// Configuration
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'your-service-key';
 
-console.log('🌱 Seeding development database...');
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-// Test users data
-const testUsers = [
-  {
-    id: 'dev-user-1',
-    email: 'admin@example.com',
-    role: 'admin',
-    subscription_tier: 'enterprise',
-    subscription_status: 'active',
-    usage_count: 15,
-    usage_limit: 1000,
-  },
-  {
-    id: 'dev-user-2',
-    email: 'pro@example.com',
-    role: 'user',
-    subscription_tier: 'professional',
-    subscription_status: 'active',
-    usage_count: 45,
-    usage_limit: 100,
-  },
-  {
-    id: 'dev-user-3',
-    email: 'free@example.com',
-    role: 'user',
-    subscription_tier: 'free',
-    subscription_status: 'active',
-    usage_count: 8,
-    usage_limit: 10,
-  },
-  {
-    id: 'dev-user-4',
-    email: 'trial@example.com',
-    role: 'user',
-    subscription_tier: 'trial',
-    subscription_status: 'trialing',
-    usage_count: 3,
-    usage_limit: 5,
-  },
-];
+// Sample data generators
+const generateUsers = (count = 5) => {
+  return Array.from({ length: count }, (_, index) => ({
+    id: faker.string.uuid(),
+    email: faker.internet.email(),
+    name: faker.person.fullName(),
+    avatar: faker.image.avatar(),
+    subscription: ['free', 'pro', 'enterprise'][index % 3],
+    credits: faker.number.int({ min: 0, max: 1000 }),
+    created_at: faker.date.past({ years: 1 }),
+    updated_at: new Date(),
+  }));
+};
 
-// Sample content generation requests
-const sampleContent = [
-  {
-    id: 'content-1',
-    user_id: 'dev-user-1',
-    keyword: 'best SEO tools 2024',
-    location: 'United States',
-    content_type: 'blog-post',
-    status: 'completed',
-    title: 'The Ultimate Guide to SEO Tools in 2024',
-    content: generateSampleContent('SEO tools'),
-    seo_score: 92,
-    quality_score: 88,
-    word_count: 2150,
-    created_at: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-  },
-  {
-    id: 'content-2',
-    user_id: 'dev-user-2',
-    keyword: 'digital marketing strategies',
-    location: 'United Kingdom',
-    content_type: 'service-page',
-    status: 'completed',
-    title: 'Proven Digital Marketing Strategies for 2024',
-    content: generateSampleContent('digital marketing'),
-    seo_score: 85,
-    quality_score: 91,
-    word_count: 1850,
-    created_at: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-  },
-  {
-    id: 'content-3',
-    user_id: 'dev-user-1',
-    keyword: 'content marketing tips',
-    location: 'Canada',
-    content_type: 'blog-post',
-    status: 'in_progress',
-    title: null,
-    content: null,
-    seo_score: null,
-    quality_score: null,
-    word_count: null,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'content-4',
-    user_id: 'dev-user-3',
-    keyword: 'social media marketing',
-    location: 'Australia',
-    content_type: 'product-description',
-    status: 'failed',
-    title: null,
-    content: null,
-    seo_score: null,
-    quality_score: null,
-    word_count: null,
-    error_message: 'API rate limit exceeded',
-    created_at: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-  },
-];
+const generateProjects = (users, count = 15) => {
+  const industries = [
+    'technology', 'healthcare', 'finance', 'education', 'retail',
+    'manufacturing', 'real-estate', 'travel', 'food', 'automotive'
+  ];
+  
+  const audiences = [
+    'beginners', 'professionals', 'experts', 'students', 'entrepreneurs',
+    'managers', 'developers', 'marketers', 'executives', 'consumers'
+  ];
 
-// Sample projects for collaboration testing
-const sampleProjects = [
-  {
-    id: 'project-1',
-    name: 'E-commerce SEO Campaign',
-    description: 'Complete SEO content strategy for online store',
-    owner_id: 'dev-user-1',
-    status: 'active',
-    created_at: new Date(Date.now() - 604800000).toISOString(), // 1 week ago
-  },
-  {
-    id: 'project-2',
-    name: 'Blog Content Series',
-    description: 'Monthly blog content for tech startup',
-    owner_id: 'dev-user-2',
-    status: 'active',
-    created_at: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
-  },
-];
+  return Array.from({ length: count }, () => ({
+    id: faker.string.uuid(),
+    user_id: faker.helpers.arrayElement(users).id,
+    name: faker.company.catchPhrase(),
+    description: faker.lorem.paragraph(),
+    keywords: faker.helpers.arrayElements([
+      'SEO', 'content marketing', 'digital strategy', 'optimization',
+      'analytics', 'conversion', 'traffic', 'ranking', 'keywords',
+      'backlinks', 'SERP', 'organic growth'
+    ], { min: 3, max: 8 }),
+    target_audience: faker.helpers.arrayElement(audiences),
+    industry: faker.helpers.arrayElement(industries),
+    status: faker.helpers.arrayElement(['active', 'paused', 'completed']),
+    created_at: faker.date.past({ years: 1 }),
+    updated_at: faker.date.recent(),
+  }));
+};
 
-// Sample comments for collaboration
-const sampleComments = [
-  {
-    id: 'comment-1',
-    project_id: 'project-1',
-    user_id: 'dev-user-2',
-    content: 'Great work on the keyword research! I think we should also target long-tail keywords.',
-    created_at: new Date(Date.now() - 86400000).toISOString(),
-  },
-  {
-    id: 'comment-2',
-    project_id: 'project-1',
-    user_id: 'dev-user-1',
-    content: 'Thanks for the feedback! I\'ll add those to the next iteration.',
-    created_at: new Date(Date.now() - 82800000).toISOString(),
-  },
-];
+const generateContent = (projects, count = 50) => {
+  const contentTypes = ['article', 'blog-post', 'landing-page', 'product-description', 'social-media'];
+  const statuses = ['draft', 'published', 'archived', 'scheduled'];
 
-// Sample analytics data
-const sampleAnalytics = [
-  {
-    id: 'analytics-1',
-    user_id: 'dev-user-1',
-    event_type: 'content_generated',
-    event_data: { keyword: 'best SEO tools 2024', duration: 245000 },
-    created_at: new Date(Date.now() - 86400000).toISOString(),
-  },
-  {
-    id: 'analytics-2',
-    user_id: 'dev-user-2',
-    event_type: 'content_exported',
-    event_data: { content_id: 'content-2', format: 'html' },
-    created_at: new Date(Date.now() - 172800000).toISOString(),
-  },
-];
-
-function generateSampleContent(topic) {
-  return `# The Complete Guide to ${topic}
-
-## Introduction
-
-Welcome to the ultimate guide on ${topic}. In this comprehensive article, we'll explore everything you need to know to master ${topic} and achieve outstanding results.
-
-## What is ${topic}?
-
-${topic} is a crucial aspect of modern digital strategy that can significantly impact your online success. Understanding the fundamentals is essential for anyone looking to excel in this field.
-
-### Key Benefits
-
-1. **Improved Performance**: Implementing ${topic} strategies leads to measurable improvements
-2. **Cost Effectiveness**: Optimized approaches reduce unnecessary expenses
-3. **Competitive Advantage**: Stay ahead of competitors with advanced techniques
-4. **Long-term Growth**: Build sustainable success with proven methodologies
-
-## Best Practices for ${topic}
-
-### 1. Strategic Planning
-
-Before diving into implementation, it's crucial to develop a comprehensive strategy that aligns with your business objectives.
-
-### 2. Implementation Guidelines
-
-Follow these step-by-step guidelines to ensure successful implementation:
-
-- **Phase 1**: Research and analysis
-- **Phase 2**: Strategy development
-- **Phase 3**: Implementation and testing
-- **Phase 4**: Optimization and scaling
-
-### 3. Monitoring and Optimization
-
-Continuous monitoring is essential for maintaining peak performance and identifying optimization opportunities.
-
-## Common Mistakes to Avoid
-
-1. **Lack of Planning**: Jumping into implementation without proper strategy
-2. **Ignoring Analytics**: Failing to track and measure performance
-3. **Inconsistent Execution**: Not maintaining consistent efforts over time
-4. **Outdated Techniques**: Using obsolete methods instead of current best practices
-
-## Advanced Techniques
-
-For those ready to take their ${topic} efforts to the next level, consider these advanced techniques:
-
-### Automation and AI
-
-Leverage automation tools and artificial intelligence to streamline processes and improve efficiency.
-
-### Data-Driven Decision Making
-
-Use analytics and data insights to guide your strategy and optimize performance.
-
-## Tools and Resources
-
-Here are some recommended tools and resources for ${topic}:
-
-- **Analytics Platforms**: Track performance and gather insights
-- **Automation Tools**: Streamline repetitive tasks
-- **Educational Resources**: Stay updated with latest trends and techniques
-
-## Conclusion
-
-Mastering ${topic} requires dedication, continuous learning, and strategic implementation. By following the guidelines and best practices outlined in this guide, you'll be well-equipped to achieve success in your ${topic} endeavors.
-
-Remember that success in ${topic} is a journey, not a destination. Stay committed to continuous improvement and adaptation to changing trends and technologies.
-
-## Next Steps
-
-1. Assess your current ${topic} strategy
-2. Identify areas for improvement
-3. Implement the techniques discussed in this guide
-4. Monitor progress and optimize continuously
-
-Start your ${topic} journey today and unlock the potential for exceptional results!`;
-}
-
-async function seedDatabase() {
-  try {
-    console.log('🗑️  Cleaning existing development data...');
+  return Array.from({ length: count }, () => {
+    const project = faker.helpers.arrayElement(projects);
+    const wordCount = faker.number.int({ min: 500, max: 5000 });
     
-    // Clean existing data (in reverse order due to foreign keys)
-    await supabase.from('analytics_events').delete().neq('id', '');
-    await supabase.from('project_comments').delete().neq('id', '');
-    await supabase.from('projects').delete().neq('id', '');
-    await supabase.from('content_generations').delete().neq('id', '');
-    await supabase.from('user_profiles').delete().neq('id', '');
+    return {
+      id: faker.string.uuid(),
+      project_id: project.id,
+      user_id: project.user_id,
+      title: faker.lorem.sentence({ min: 5, max: 12 }),
+      content: faker.lorem.paragraphs(faker.number.int({ min: 5, max: 20 }), '\n\n'),
+      meta_description: faker.lorem.sentence({ min: 10, max: 20 }),
+      slug: faker.lorem.slug(),
+      content_type: faker.helpers.arrayElement(contentTypes),
+      status: faker.helpers.arrayElement(statuses),
+      word_count: wordCount,
+      seo_score: faker.number.int({ min: 60, max: 100 }),
+      readability_score: faker.number.int({ min: 70, max: 95 }),
+      keyword_density: faker.number.float({ min: 1.0, max: 3.5, fractionDigits: 2 }),
+      target_keywords: project.keywords.slice(0, faker.number.int({ min: 1, max: 5 })),
+      generated_at: faker.date.past({ months: 6 }),
+      published_at: faker.helpers.maybe(() => faker.date.recent(), { probability: 0.7 }),
+      created_at: faker.date.past({ months: 6 }),
+      updated_at: faker.date.recent(),
+    };
+  });
+};
 
-    console.log('👥 Seeding users...');
+const generateAnalytics = (content, count = 200) => {
+  return Array.from({ length: count }, () => {
+    const contentItem = faker.helpers.arrayElement(content);
+    
+    return {
+      id: faker.string.uuid(),
+      content_id: contentItem.id,
+      project_id: contentItem.project_id,
+      user_id: contentItem.user_id,
+      date: faker.date.past({ months: 3 }),
+      page_views: faker.number.int({ min: 0, max: 10000 }),
+      unique_visitors: faker.number.int({ min: 0, max: 5000 }),
+      bounce_rate: faker.number.float({ min: 0.2, max: 0.8, fractionDigits: 2 }),
+      avg_session_duration: faker.number.int({ min: 30, max: 600 }),
+      conversion_rate: faker.number.float({ min: 0.01, max: 0.15, fractionDigits: 3 }),
+      organic_traffic: faker.number.int({ min: 0, max: 3000 }),
+      search_ranking: faker.number.int({ min: 1, max: 100 }),
+      click_through_rate: faker.number.float({ min: 0.01, max: 0.25, fractionDigits: 3 }),
+      created_at: faker.date.past({ months: 3 }),
+    };
+  });
+};
+
+const generateCompetitorAnalysis = (projects, count = 30) => {
+  return Array.from({ length: count }, () => {
+    const project = faker.helpers.arrayElement(projects);
+    
+    return {
+      id: faker.string.uuid(),
+      project_id: project.id,
+      user_id: project.user_id,
+      competitor_url: faker.internet.url(),
+      competitor_title: faker.company.name(),
+      word_count: faker.number.int({ min: 1000, max: 8000 }),
+      keyword_density: faker.number.float({ min: 0.5, max: 4.0, fractionDigits: 2 }),
+      heading_count: faker.number.int({ min: 5, max: 25 }),
+      meta_title_length: faker.number.int({ min: 30, max: 70 }),
+      meta_description_length: faker.number.int({ min: 120, max: 160 }),
+      load_time: faker.number.float({ min: 0.8, max: 5.0, fractionDigits: 2 }),
+      mobile_optimized: faker.datatype.boolean({ probability: 0.8 }),
+      https_enabled: faker.datatype.boolean({ probability: 0.9 }),
+      domain_authority: faker.number.int({ min: 20, max: 95 }),
+      backlink_count: faker.number.int({ min: 10, max: 10000 }),
+      social_shares: faker.number.int({ min: 0, max: 5000 }),
+      analyzed_at: faker.date.past({ months: 2 }),
+      created_at: faker.date.past({ months: 2 }),
+    };
+  });
+};
+
+// Main seeding function
+async function seedDatabase() {
+  console.log('🌱 Starting development data seeding...');
+  
+  try {
+    // Check if we're in test environment
+    const isTest = process.env.NODE_ENV === 'test';
+    const tablePrefix = isTest ? 'test_' : '';
+    
+    console.log(`📊 Environment: ${isTest ? 'TEST' : 'DEVELOPMENT'}`);
+    
+    // Generate sample data
+    console.log('📝 Generating sample data...');
+    const users = generateUsers(5);
+    const projects = generateProjects(users, 15);
+    const content = generateContent(projects, 50);
+    const analytics = generateAnalytics(content, 200);
+    const competitorAnalysis = generateCompetitorAnalysis(projects, 30);
+    
+    // Clear existing data (development only)
+    if (!isTest) {
+      console.log('🧹 Clearing existing development data...');
+      await supabase.from('analytics').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('competitor_analysis').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('content').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('projects').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('profiles').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    }
+    
+    // Insert data
+    console.log('👥 Inserting users...');
     const { error: usersError } = await supabase
-      .from('user_profiles')
-      .insert(testUsers);
+      .from(`${tablePrefix}profiles`)
+      .insert(users);
     
     if (usersError) {
-      console.error('Error seeding users:', usersError);
-      return;
+      console.log('ℹ️  Users may already exist, continuing...');
     }
-
-    console.log('📝 Seeding content...');
-    const { error: contentError } = await supabase
-      .from('content_generations')
-      .insert(sampleContent);
     
-    if (contentError) {
-      console.error('Error seeding content:', contentError);
-      return;
-    }
-
-    console.log('📁 Seeding projects...');
+    console.log('📁 Inserting projects...');
     const { error: projectsError } = await supabase
-      .from('projects')
-      .insert(sampleProjects);
+      .from(`${tablePrefix}projects`)
+      .insert(projects);
     
     if (projectsError) {
-      console.error('Error seeding projects:', projectsError);
-      return;
+      console.error('Error inserting projects:', projectsError);
+      throw projectsError;
     }
-
-    console.log('💬 Seeding comments...');
-    const { error: commentsError } = await supabase
-      .from('project_comments')
-      .insert(sampleComments);
     
-    if (commentsError) {
-      console.error('Error seeding comments:', commentsError);
-      return;
+    console.log('📄 Inserting content...');
+    const { error: contentError } = await supabase
+      .from(`${tablePrefix}content`)
+      .insert(content);
+    
+    if (contentError) {
+      console.error('Error inserting content:', contentError);
+      throw contentError;
     }
-
-    console.log('📊 Seeding analytics...');
+    
+    console.log('📈 Inserting analytics...');
     const { error: analyticsError } = await supabase
-      .from('analytics_events')
-      .insert(sampleAnalytics);
+      .from(`${tablePrefix}analytics`)
+      .insert(analytics);
     
     if (analyticsError) {
-      console.error('Error seeding analytics:', analyticsError);
-      return;
+      console.error('Error inserting analytics:', analyticsError);
+      throw analyticsError;
     }
-
-    console.log('');
-    console.log('🎉 Development database seeded successfully!');
-    console.log('');
-    console.log('Test accounts created:');
-    console.log('  📧 admin@example.com (Enterprise)');
-    console.log('  📧 pro@example.com (Professional)');
-    console.log('  📧 free@example.com (Free tier)');
-    console.log('  📧 trial@example.com (Trial)');
-    console.log('');
-    console.log('Sample content and projects are now available for testing.');
-
+    
+    console.log('🔍 Inserting competitor analysis...');
+    const { error: competitorError } = await supabase
+      .from(`${tablePrefix}competitor_analysis`)
+      .insert(competitorAnalysis);
+    
+    if (competitorError) {
+      console.error('Error inserting competitor analysis:', competitorError);
+      throw competitorError;
+    }
+    
+    console.log('✅ Development data seeding completed successfully!');
+    console.log(`📊 Summary:`);
+    console.log(`   - Users: ${users.length}`);
+    console.log(`   - Projects: ${projects.length}`);
+    console.log(`   - Content: ${content.length}`);
+    console.log(`   - Analytics: ${analytics.length}`);
+    console.log(`   - Competitor Analysis: ${competitorAnalysis.length}`);
+    
   } catch (error) {
     console.error('❌ Error seeding database:', error);
     process.exit(1);
   }
 }
 
-// Run the seeding
-seedDatabase();
+// Run seeding if called directly
+if (require.main === module) {
+  seedDatabase();
+}
+
+module.exports = { seedDatabase };

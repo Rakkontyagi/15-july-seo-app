@@ -1,101 +1,245 @@
-export interface SerpResult {
-  title: string;
-  url: string;
-  snippet: string;
-  position: number;
+import { SerperClient, getSerperClient } from './serper-client';
+import { SerpApiClient, getSerpApiClient } from './serpapi-client';
+import { SERPAnalysisService } from './serp-analysis.service';
+import { serperRateLimiter, serperCircuitBreaker } from './rate-limiter';
+import { logger } from '@/lib/logging/logger';
+
+export type SearchProvider = 'serper' | 'serpapi';
+
+interface ProviderHealth {
+  provider: SearchProvider;
+  available: boolean;
+  lastCheck: Date;
+  failureCount: number;
+  quota?: {
+    used: number;
+    limit: number;
+  };
 }
 
-export interface SerpAnalysis {
-  keyword: string;
-  results: SerpResult[];
-  totalResults: number;
-  searchTime: number;
-}
-
-export class UnifiedSerpService {
-  private apiKey: string;
-
+export class UnifiedSERPService {
+  private serperClient: SerperClient | null = null;
+  private serpApiClient: SerpApiClient | null = null;
+  private serpAnalysisService: SERPAnalysisService | null = null;
+  private providerHealth: Map<SearchProvider, ProviderHealth> = new Map();
+  
   constructor() {
-    this.apiKey = process.env.SERPER_API_KEY || '';
+    this.initializeProviders();
   }
 
-  async analyzeSERP(keyword: string, location = 'us'): Promise<SerpAnalysis> {
+  private initializeProviders() {
+    // Initialize Serper (primary)
     try {
-      const response = await fetch('https://google.serper.dev/search', {
-        method: 'POST',
-        headers: {
-          'X-API-KEY': this.apiKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          q: keyword,
-          gl: location,
-          num: 10,
-        }),
+      this.serperClient = getSerperClient();
+      this.providerHealth.set('serper', {
+        provider: 'serper',
+        available: true,
+        lastCheck: new Date(),
+        failureCount: 0
       });
-
-      if (!response.ok) {
-        throw new Error(`SERP API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      const results: SerpResult[] = (data.organic || []).map((result: any, index: number) => ({
-        title: result.title || '',
-        url: result.link || '',
-        snippet: result.snippet || '',
-        position: index + 1,
-      }));
-
-      return {
-        keyword,
-        results,
-        totalResults: data.searchInformation?.totalResults || 0,
-        searchTime: data.searchInformation?.searchTime || 0,
-      };
+      logger.info('Serper.dev client initialized successfully');
     } catch (error) {
-      console.error('SERP analysis error:', error);
-      
-      // Return mock data for development
-      return {
-        keyword,
-        results: [
-          {
-            title: `Sample result for ${keyword}`,
-            url: 'https://example.com',
-            snippet: 'This is a sample snippet for development purposes.',
-            position: 1,
-          },
-        ],
-        totalResults: 1,
-        searchTime: 0.1,
-      };
+      logger.error('Failed to initialize Serper client:', error);
+      this.providerHealth.set('serper', {
+        provider: 'serper',
+        available: false,
+        lastCheck: new Date(),
+        failureCount: 1
+      });
+    }
+
+    // Initialize SerpApi (backup)
+    try {
+      const serpApiClient = getSerpApiClient();
+      if (serpApiClient) {
+        this.serpApiClient = serpApiClient;
+        this.providerHealth.set('serpapi', {
+          provider: 'serpapi',
+          available: true,
+          lastCheck: new Date(),
+          failureCount: 0
+        });
+        logger.info('SerpApi client initialized successfully');
+      }
+    } catch (error) {
+      logger.warn('SerpApi client not configured or failed to initialize:', error);
+    }
+
+    // Initialize SERP Analysis Service with primary provider
+    if (this.serperClient) {
+      this.serpAnalysisService = new SERPAnalysisService(this.serperClient);
     }
   }
 
-  async getTopCompetitors(keyword: string, count = 5): Promise<SerpResult[]> {
-    const analysis = await this.analyzeSERP(keyword);
-    return analysis.results.slice(0, count);
+  async analyzeKeyword(options: any) {
+    // Try primary provider first
+    if (this.isProviderAvailable('serper')) {
+      try {
+        return await this.analyzeWithSerper(options);
+      } catch (error) {
+        logger.error('Serper analysis failed:', error);
+        this.recordProviderFailure('serper');
+        
+        // Try backup provider
+        if (this.isProviderAvailable('serpapi')) {
+          return await this.analyzeWithSerpApi(options);
+        }
+      }
+    } else if (this.isProviderAvailable('serpapi')) {
+      return await this.analyzeWithSerpApi(options);
+    }
+
+    throw new Error('No search providers available');
   }
 
-  async extractKeywords(content: string): Promise<string[]> {
-    // Simple keyword extraction - in production, use more sophisticated NLP
-    const words = content.toLowerCase()
-      .replace(/[^\w\s]/g, ' ')
-      .split(/\s+/)
-      .filter(word => word.length > 3);
+  private async analyzeWithSerper(options: any) {
+    if (!this.serpAnalysisService) {
+      throw new Error('SERP analysis service not initialized');
+    }
+
+    return await serperCircuitBreaker.execute(async () => {
+      return await serperRateLimiter.executeWithRetry(
+        async () => {
+          const result = await this.serpAnalysisService!.analyzeKeyword(options);
+          this.recordProviderSuccess('serper');
+          return result;
+        },
+        (error) => {
+          // Retry on rate limit or temporary errors
+          return error.message.includes('rate limit') || 
+                 error.message.includes('timeout');
+        }
+      );
+    });
+  }
+
+  private async analyzeWithSerpApi(options: any) {
+    if (!this.serpApiClient) {
+      throw new Error('SerpApi client not available');
+    }
+
+    logger.info('Falling back to SerpApi');
+
+    const searchOptions = {
+      keyword: options.keyword,
+      location: options.location,
+      num: options.numResults || 5
+    };
+
+    const serpApiResponse = await this.serpApiClient.search(searchOptions);
+    const convertedResponse = this.serpApiClient.convertToSerperFormat(serpApiResponse);
+
+    // Use temporary SERP analysis service with converted data
+    const tempAnalysisService = new SERPAnalysisService({
+      search: async () => convertedResponse
+    } as any);
+
+    const result = await tempAnalysisService.analyzeKeyword(options);
+    this.recordProviderSuccess('serpapi');
+    return result;
+  }
+
+  private isProviderAvailable(provider: SearchProvider): boolean {
+    const health = this.providerHealth.get(provider);
+    if (!health) return false;
+
+    // Check if provider has been failing too much
+    if (health.failureCount >= 5) {
+      // Check if cooldown period has passed (5 minutes)
+      const cooldownPeriod = 5 * 60 * 1000;
+      if (Date.now() - health.lastCheck.getTime() > cooldownPeriod) {
+        // Reset failure count and try again
+        health.failureCount = 0;
+        health.available = true;
+      } else {
+        return false;
+      }
+    }
+
+    return health.available;
+  }
+
+  private recordProviderFailure(provider: SearchProvider) {
+    const health = this.providerHealth.get(provider);
+    if (health) {
+      health.failureCount++;
+      health.lastCheck = new Date();
+      if (health.failureCount >= 5) {
+        health.available = false;
+        logger.warn(`Provider ${provider} marked as unavailable after ${health.failureCount} failures`);
+      }
+    }
+  }
+
+  private recordProviderSuccess(provider: SearchProvider) {
+    const health = this.providerHealth.get(provider);
+    if (health) {
+      health.failureCount = 0;
+      health.available = true;
+      health.lastCheck = new Date();
+    }
+  }
+
+  async checkProviderHealth(): Promise<ProviderHealth[]> {
+    const healthChecks: ProviderHealth[] = [];
+
+    // Check Serper
+    if (this.serperClient) {
+      try {
+        const quota = await this.serperClient.checkQuota();
+        const health = this.providerHealth.get('serper')!;
+        health.quota = quota;
+        healthChecks.push({ ...health });
+      } catch (error) {
+        logger.error('Failed to check Serper health:', error);
+      }
+    }
+
+    // Check SerpApi
+    if (this.serpApiClient) {
+      try {
+        const account = await this.serpApiClient.checkAccount();
+        const health = this.providerHealth.get('serpapi')!;
+        health.quota = {
+          used: account.searches_left > 0 ? 0 : 1,
+          limit: account.searches_left
+        };
+        healthChecks.push({ ...health });
+      } catch (error) {
+        logger.error('Failed to check SerpApi health:', error);
+      }
+    }
+
+    return healthChecks;
+  }
+
+  async compareRegionalResults(keyword: string, locations: string[]) {
+    if (!this.serpAnalysisService) {
+      throw new Error('SERP analysis service not initialized');
+    }
+
+    return await this.serpAnalysisService.compareRegionalResults(keyword, locations);
+  }
+
+  getAvailableProviders(): SearchProvider[] {
+    const available: SearchProvider[] = [];
     
-    const wordCount = new Map<string, number>();
-    words.forEach(word => {
-      wordCount.set(word, (wordCount.get(word) || 0) + 1);
+    this.providerHealth.forEach((health, provider) => {
+      if (health.available) {
+        available.push(provider);
+      }
     });
 
-    return Array.from(wordCount.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 20)
-      .map(([word]) => word);
+    return available;
   }
 }
 
 // Export singleton instance
-export const getUnifiedSERPService = () => new UnifiedSerpService();
+let unifiedSERPService: UnifiedSERPService | null = null;
+
+export function getUnifiedSERPService(): UnifiedSERPService {
+  if (!unifiedSERPService) {
+    unifiedSERPService = new UnifiedSERPService();
+  }
+  return unifiedSERPService;
+}

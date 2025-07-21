@@ -1,195 +1,344 @@
-export interface KeywordTarget {
+/**
+ * Keyword Density Matcher - Enhanced precision matching with competitor benchmarks
+ * Integrates with CompetitorDataAverager and ContentIntegrationEngine
+ */
+
+import { BenchmarkTargets, CompetitorAnalysis } from './competitor-data-averager';
+import { IntegratedContent } from './content-integration-engine';
+
+export interface KeywordDensityMatch {
   keyword: string;
-  targetDensity: number;
   currentDensity: number;
-  status: 'under' | 'optimal' | 'over';
+  targetDensity: number;
+  difference: number;
+  isMatched: boolean;
+  precision: number;
+  recommendedAction: 'increase' | 'decrease' | 'maintain';
 }
 
-export interface DensityMatchResult {
-  targets: KeywordTarget[];
-  overallScore: number;
-  recommendations: string[];
-  optimizedContent?: string;
+export interface DensityMatchingResult {
+  primaryKeyword: KeywordDensityMatch;
+  lsiKeywords: KeywordDensityMatch[];
+  overallMatch: boolean;
+  averagePrecision: number;
+  competitorAlignment: number;
+  optimizationSuggestions: string[];
+}
+
+export interface KeywordVariation {
+  term: string;
+  density: number;
+  frequency: number;
+  positions: number[];
 }
 
 export class KeywordDensityMatcher {
-  private static readonly OPTIMAL_DENSITY_RANGE = {
-    primary: { min: 1.0, max: 3.0 },
-    secondary: { min: 0.5, max: 2.0 },
-    lsi: { min: 0.2, max: 1.0 },
-  };
+  private readonly PRECISION_THRESHOLD = 0.01; // 0.01% precision requirement
+  private readonly MAX_DENSITY_THRESHOLD = 3.5; // Prevent over-optimization
+  private readonly MIN_DENSITY_THRESHOLD = 0.5; // Minimum for relevance
 
-  static analyzeKeywordDensity(
+  /**
+   * Match keyword densities against competitor benchmarks with precision
+   */
+  matchAgainstBenchmarks(
     content: string,
-    primaryKeywords: string[],
-    secondaryKeywords: string[] = [],
-    lsiKeywords: string[] = []
-  ): DensityMatchResult {
-    const wordCount = this.countWords(content);
-    const targets: KeywordTarget[] = [];
-
-    // Analyze primary keywords
-    primaryKeywords.forEach(keyword => {
-      const density = this.calculateDensity(content, keyword, wordCount);
-      const target = this.OPTIMAL_DENSITY_RANGE.primary;
-      targets.push({
-        keyword,
-        targetDensity: (target.min + target.max) / 2,
-        currentDensity: density,
-        status: this.getDensityStatus(density, target.min, target.max),
-      });
-    });
-
-    // Analyze secondary keywords
-    secondaryKeywords.forEach(keyword => {
-      const density = this.calculateDensity(content, keyword, wordCount);
-      const target = this.OPTIMAL_DENSITY_RANGE.secondary;
-      targets.push({
-        keyword,
-        targetDensity: (target.min + target.max) / 2,
-        currentDensity: density,
-        status: this.getDensityStatus(density, target.min, target.max),
-      });
-    });
-
+    primaryKeyword: string,
+    lsiKeywords: string[],
+    benchmarks: BenchmarkTargets
+  ): DensityMatchingResult {
+    // Analyze primary keyword
+    const primaryMatch = this.analyzePrimaryKeywordMatch(content, primaryKeyword, benchmarks);
+    
     // Analyze LSI keywords
-    lsiKeywords.forEach(keyword => {
-      const density = this.calculateDensity(content, keyword, wordCount);
-      const target = this.OPTIMAL_DENSITY_RANGE.lsi;
-      targets.push({
-        keyword,
-        targetDensity: (target.min + target.max) / 2,
-        currentDensity: density,
-        status: this.getDensityStatus(density, target.min, target.max),
-      });
-    });
-
-    const overallScore = this.calculateOverallScore(targets);
-    const recommendations = this.generateRecommendations(targets);
+    const lsiMatches = this.analyzeLSIKeywordMatches(content, lsiKeywords, benchmarks);
+    
+    // Calculate overall matching metrics
+    const overallMatch = this.calculateOverallMatch(primaryMatch, lsiMatches);
+    const averagePrecision = this.calculateAveragePrecision(primaryMatch, lsiMatches);
+    const competitorAlignment = this.calculateCompetitorAlignment(primaryMatch, lsiMatches, benchmarks);
+    
+    // Generate optimization suggestions
+    const optimizationSuggestions = this.generateOptimizationSuggestions(primaryMatch, lsiMatches);
 
     return {
-      targets,
-      overallScore,
-      recommendations,
+      primaryKeyword: primaryMatch,
+      lsiKeywords: lsiMatches,
+      overallMatch,
+      averagePrecision,
+      competitorAlignment,
+      optimizationSuggestions,
     };
   }
 
-  static optimizeContentDensity(
-    content: string,
-    targets: KeywordTarget[]
-  ): string {
-    let optimizedContent = content;
+  /**
+   * Validate integrated content against competitor benchmarks
+   */
+  validateIntegratedContent(
+    integratedContent: IntegratedContent,
+    primaryKeyword: string,
+    benchmarks: BenchmarkTargets
+  ): {
+    isValid: boolean;
+    densityAccuracy: number;
+    benchmarkCompliance: number;
+    validationIssues: string[];
+  } {
+    const validationIssues: string[] = [];
     
-    // This is a simplified optimization - in production, use more sophisticated NLP
-    targets.forEach(target => {
-      if (target.status === 'under') {
-        // Add keyword mentions naturally
-        optimizedContent = this.addKeywordMentions(optimizedContent, target);
-      } else if (target.status === 'over') {
-        // Reduce keyword mentions
-        optimizedContent = this.reduceKeywordMentions(optimizedContent, target);
-      }
-    });
-
-    return optimizedContent;
-  }
-
-  private static countWords(text: string): number {
-    return text.split(/\s+/).filter(word => word.length > 0).length;
-  }
-
-  private static calculateDensity(content: string, keyword: string, wordCount: number): number {
-    const regex = new RegExp(keyword.toLowerCase(), 'gi');
-    const matches = content.toLowerCase().match(regex) || [];
-    return (matches.length / wordCount) * 100;
-  }
-
-  private static getDensityStatus(
-    density: number,
-    minTarget: number,
-    maxTarget: number
-  ): 'under' | 'optimal' | 'over' {
-    if (density < minTarget) return 'under';
-    if (density > maxTarget) return 'over';
-    return 'optimal';
-  }
-
-  private static calculateOverallScore(targets: KeywordTarget[]): number {
-    if (targets.length === 0) return 100;
-
-    const optimalCount = targets.filter(t => t.status === 'optimal').length;
-    return Math.round((optimalCount / targets.length) * 100);
-  }
-
-  private static generateRecommendations(targets: KeywordTarget[]): string[] {
-    const recommendations: string[] = [];
-
-    const underTargets = targets.filter(t => t.status === 'under');
-    const overTargets = targets.filter(t => t.status === 'over');
-
-    if (underTargets.length > 0) {
-      recommendations.push(
-        `Increase density for: ${underTargets.map(t => t.keyword).join(', ')}`
-      );
-    }
-
-    if (overTargets.length > 0) {
-      recommendations.push(
-        `Reduce density for: ${overTargets.map(t => t.keyword).join(', ')}`
-      );
-    }
-
-    if (underTargets.length === 0 && overTargets.length === 0) {
-      recommendations.push('Keyword density is optimal for all targets');
-    }
-
-    return recommendations;
-  }
-
-  private static addKeywordMentions(content: string, target: KeywordTarget): string {
-    // Simple implementation - in production, use more sophisticated text generation
-    const sentences = content.split('. ');
-    const targetSentenceIndex = Math.floor(sentences.length / 2);
+    // Check primary keyword density accuracy
+    const targetDensity = benchmarks.keywordDensity;
+    const achievedDensity = integratedContent.keywordDensityAchieved;
+    const densityDifference = Math.abs(achievedDensity - targetDensity);
     
-    if (targetSentenceIndex < sentences.length) {
-      const sentence = sentences[targetSentenceIndex];
-      if (!sentence.toLowerCase().includes(target.keyword.toLowerCase())) {
-        sentences[targetSentenceIndex] = sentence + ` This relates to ${target.keyword}.`;
-      }
+    if (densityDifference > this.PRECISION_THRESHOLD) {
+      validationIssues.push(`Keyword density precision issue: ${densityDifference.toFixed(4)}% difference from target`);
+    }
+    
+    // Check over-optimization
+    if (achievedDensity > this.MAX_DENSITY_THRESHOLD) {
+      validationIssues.push(`Over-optimization risk: ${achievedDensity}% exceeds safe threshold of ${this.MAX_DENSITY_THRESHOLD}%`);
+    }
+    
+    // Check under-optimization
+    if (achievedDensity < this.MIN_DENSITY_THRESHOLD) {
+      validationIssues.push(`Under-optimization: ${achievedDensity}% below minimum threshold of ${this.MIN_DENSITY_THRESHOLD}%`);
+    }
+    
+    // Check heading optimization compliance
+    if (integratedContent.headingOptimizationCount !== benchmarks.headingOptimization) {
+      validationIssues.push(`Heading optimization mismatch: ${integratedContent.headingOptimizationCount} vs target ${benchmarks.headingOptimization}`);
+    }
+    
+    // Check natural flow score
+    if (integratedContent.naturalFlowScore < 70) {
+      validationIssues.push(`Natural flow score too low: ${integratedContent.naturalFlowScore}% (minimum 70%)`);
     }
 
-    return sentences.join('. ');
-  }
+    const densityAccuracy = Math.max(0, 100 - (densityDifference * 100));
+    const benchmarkCompliance = this.calculateBenchmarkCompliance(integratedContent, benchmarks);
+    const isValid = validationIssues.length === 0;
 
-  private static reduceKeywordMentions(content: string, target: KeywordTarget): string {
-    // Simple implementation - replace some keyword mentions with synonyms
-    const regex = new RegExp(target.keyword, 'gi');
-    let replacementCount = 0;
-    const maxReplacements = Math.ceil(target.currentDensity - target.targetDensity);
-
-    return content.replace(regex, (match) => {
-      if (replacementCount < maxReplacements) {
-        replacementCount++;
-        return this.getKeywordSynonym(target.keyword);
-      }
-      return match;
-    });
-  }
-
-  private static getKeywordSynonym(keyword: string): string {
-    // Simple synonym mapping - in production, use a proper thesaurus API
-    const synonyms: Record<string, string[]> = {
-      'seo': ['search optimization', 'search engine optimization'],
-      'content': ['material', 'information', 'text'],
-      'marketing': ['promotion', 'advertising'],
-      'business': ['company', 'organization', 'enterprise'],
+    return {
+      isValid,
+      densityAccuracy,
+      benchmarkCompliance,
+      validationIssues,
     };
+  }
 
-    const keywordSynonyms = synonyms[keyword.toLowerCase()];
-    if (keywordSynonyms && keywordSynonyms.length > 0) {
-      return keywordSynonyms[Math.floor(Math.random() * keywordSynonyms.length)];
+  /**
+   * Extract keyword variations and their densities
+   */
+  extractKeywordVariations(content: string, baseKeyword: string): KeywordVariation[] {
+    const variations: KeywordVariation[] = [];
+    const words = this.tokenizeContent(content);
+    const totalWords = words.length;
+
+    // Generate common variations
+    const keywordVariations = this.generateKeywordVariations(baseKeyword);
+    
+    keywordVariations.forEach(variation => {
+      const positions = this.findKeywordPositions(words, variation);
+      const frequency = positions.length;
+      const density = Number(((frequency / totalWords) * 100).toFixed(2));
+      
+      if (frequency > 0) {
+        variations.push({
+          term: variation,
+          density,
+          frequency,
+          positions,
+        });
+      }
+    });
+
+    return variations.sort((a, b) => b.density - a.density);
+  }
+
+  /**
+   * Calculate competitor density alignment score
+   */
+  calculateCompetitorAlignment(
+    competitors: CompetitorAnalysis[],
+    currentDensity: number,
+    targetDensity: number
+  ): number {
+    if (!competitors || competitors.length === 0) {
+      return 0;
     }
 
-    return keyword;
+    const competitorDensities = competitors.map(c => c.keywordDensity).filter(d => !isNaN(d) && d >= 0);
+    if (competitorDensities.length === 0) {
+      return 0;
+    }
+
+    const competitorMean = competitorDensities.reduce((a, b) => a + b, 0) / competitorDensities.length;
+
+    // Calculate how well current density aligns with competitor average
+    const alignmentWithCompetitors = Math.max(0, 100 - Math.abs(currentDensity - competitorMean) * 10);
+
+    // Calculate how well target density matches competitor average
+    const targetAlignment = Math.max(0, 100 - Math.abs(targetDensity - competitorMean) * 10);
+
+    const result = (alignmentWithCompetitors + targetAlignment) / 2;
+    return Number(result.toFixed(1));
+  }
+
+  // Private helper methods
+  private analyzePrimaryKeywordMatch(content: string, keyword: string, benchmarks: BenchmarkTargets): KeywordDensityMatch {
+    const currentDensity = this.calculateKeywordDensity(content, keyword);
+    const targetDensity = benchmarks.keywordDensity;
+    const difference = Math.abs(currentDensity - targetDensity);
+    const precision = Math.max(0, 100 - (difference * 100));
+    
+    return {
+      keyword,
+      currentDensity,
+      targetDensity,
+      difference,
+      isMatched: difference <= this.PRECISION_THRESHOLD,
+      precision,
+      recommendedAction: currentDensity < targetDensity ? 'increase' : 
+                        currentDensity > targetDensity ? 'decrease' : 'maintain',
+    };
+  }
+
+  private analyzeLSIKeywordMatches(content: string, lsiKeywords: string[], benchmarks: BenchmarkTargets): KeywordDensityMatch[] {
+    const targetLSIDensity = benchmarks.lsiKeywordTargets / 100; // Convert to percentage
+    
+    return lsiKeywords.map(keyword => {
+      const currentDensity = this.calculateKeywordDensity(content, keyword);
+      const difference = Math.abs(currentDensity - targetLSIDensity);
+      const precision = Math.max(0, 100 - (difference * 100));
+      
+      return {
+        keyword,
+        currentDensity,
+        targetDensity: targetLSIDensity,
+        difference,
+        isMatched: difference <= this.PRECISION_THRESHOLD,
+        precision,
+        recommendedAction: currentDensity < targetLSIDensity ? 'increase' : 
+                          currentDensity > targetLSIDensity ? 'decrease' : 'maintain',
+      };
+    });
+  }
+
+  private calculateKeywordDensity(content: string, keyword: string): number {
+    const words = this.tokenizeContent(content);
+    const keywordCount = this.countKeywordOccurrences(words, keyword);
+    return Number(((keywordCount / words.length) * 100).toFixed(2));
+  }
+
+  private tokenizeContent(content: string): string[] {
+    return content.toLowerCase()
+      .replace(/[^\w\s]/g, ' ')
+      .split(/\s+/)
+      .filter(word => word.length > 0);
+  }
+
+  private countKeywordOccurrences(words: string[], keyword: string): number {
+    const keywordLower = keyword.toLowerCase();
+    return words.filter(word => word === keywordLower).length;
+  }
+
+  private calculateOverallMatch(primary: KeywordDensityMatch, lsi: KeywordDensityMatch[]): boolean {
+    const lsiMatched = lsi.filter(k => k.isMatched).length;
+    const lsiTotal = lsi.length;
+    const lsiMatchRate = lsiTotal > 0 ? lsiMatched / lsiTotal : 1;
+    
+    return primary.isMatched && lsiMatchRate >= 0.8; // 80% of LSI keywords must match
+  }
+
+  private calculateAveragePrecision(primary: KeywordDensityMatch, lsi: KeywordDensityMatch[]): number {
+    const allPrecisions = [primary.precision, ...lsi.map(k => k.precision)];
+    const average = allPrecisions.reduce((a, b) => a + b, 0) / allPrecisions.length;
+    return Number(average.toFixed(1));
+  }
+
+  private calculateCompetitorAlignment(primary: KeywordDensityMatch, lsi: KeywordDensityMatch[], benchmarks: BenchmarkTargets): number {
+    // Simplified alignment calculation
+    const primaryAlignment = primary.isMatched ? 100 : Math.max(0, 100 - primary.difference * 50);
+    const lsiAlignment = lsi.length > 0 ? 
+      lsi.reduce((sum, k) => sum + (k.isMatched ? 100 : Math.max(0, 100 - k.difference * 50)), 0) / lsi.length : 100;
+    
+    return Number(((primaryAlignment + lsiAlignment) / 2).toFixed(1));
+  }
+
+  private generateOptimizationSuggestions(primary: KeywordDensityMatch, lsi: KeywordDensityMatch[]): string[] {
+    const suggestions: string[] = [];
+    
+    if (!primary.isMatched) {
+      suggestions.push(`${primary.recommendedAction} primary keyword "${primary.keyword}" density by ${primary.difference.toFixed(2)}%`);
+    }
+    
+    const unmatchedLSI = lsi.filter(k => !k.isMatched);
+    if (unmatchedLSI.length > 0) {
+      suggestions.push(`Adjust ${unmatchedLSI.length} LSI keywords for better density matching`);
+    }
+    
+    if (suggestions.length === 0) {
+      suggestions.push('Keyword density optimization is on target - maintain current levels');
+    }
+    
+    return suggestions;
+  }
+
+  private generateKeywordVariations(baseKeyword: string): string[] {
+    // Enhanced variation generation
+    const variations = [baseKeyword.toLowerCase()];
+    const words = baseKeyword.toLowerCase().split(' ');
+
+    // Add individual words
+    if (words.length > 1) {
+      variations.push(...words);
+    }
+
+    // Add common variations
+    variations.push(baseKeyword.toLowerCase() + 's');
+    variations.push(baseKeyword.toLowerCase().replace(/s$/, ''));
+
+    // Add partial matches for compound keywords
+    if (words.length === 2) {
+      variations.push(words[0]);
+      variations.push(words[1]);
+      variations.push(words.reverse().join(' '));
+    }
+
+    return [...new Set(variations)]; // Remove duplicates
+  }
+
+  private findKeywordPositions(words: string[], keyword: string): number[] {
+    const positions: number[] = [];
+    const keywordLower = keyword.toLowerCase();
+    
+    words.forEach((word, index) => {
+      if (word === keywordLower) {
+        positions.push(index);
+      }
+    });
+    
+    return positions;
+  }
+
+  private calculateBenchmarkCompliance(content: IntegratedContent, benchmarks: BenchmarkTargets): number {
+    let compliance = 0;
+    let totalChecks = 0;
+    
+    // Check keyword density compliance
+    const densityDiff = Math.abs(content.keywordDensityAchieved - benchmarks.keywordDensity);
+    compliance += densityDiff <= this.PRECISION_THRESHOLD ? 100 : Math.max(0, 100 - densityDiff * 50);
+    totalChecks++;
+    
+    // Check heading optimization compliance
+    const headingMatch = content.headingOptimizationCount === benchmarks.headingOptimization;
+    compliance += headingMatch ? 100 : 50;
+    totalChecks++;
+    
+    // Check natural flow compliance
+    compliance += content.naturalFlowScore;
+    totalChecks++;
+    
+    return Number((compliance / totalChecks).toFixed(1));
   }
 }

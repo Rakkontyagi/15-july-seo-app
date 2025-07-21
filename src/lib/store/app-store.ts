@@ -1,61 +1,34 @@
 /**
- * Global Application Store
- * Implements Quinn's recommendation for Zustand-based state management
- * Provides centralized state for authentication, subscription, and UI state
+ * Global Application Store - Zustand Implementation
+ * Following ADR-006: State Management Strategy
+ * 
+ * This store manages global application state including:
+ * - User authentication and session
+ * - UI state and preferences
+ * - Application-wide settings
+ * - Content generation progress
  */
 
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import { devtools } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
+import { immer } from 'zustand/middleware/immer';
 
 // Types
 export interface User {
   id: string;
   email: string;
-  name?: string;
+  name: string;
   avatar?: string;
-  role: 'admin' | 'user';
-  created_at: string;
-  updated_at: string;
+  subscription: 'free' | 'pro' | 'enterprise';
+  credits: number;
 }
 
-export interface UserSubscription {
+export interface Notification {
   id: string;
-  user_id: string;
-  tier: 'free' | 'trial' | 'professional' | 'enterprise';
-  status: 'active' | 'canceled' | 'past_due' | 'trialing';
-  current_period_start: string;
-  current_period_end: string;
-  cancel_at_period_end: boolean;
-  stripe_subscription_id?: string;
-}
-
-export interface UsageStats {
-  user_id: string;
-  current_usage: number;
-  usage_limit: number;
-  reset_date: string;
-  overage_count: number;
-}
-
-export interface GenerationProgress {
-  id: string;
-  stage: string;
-  label: string;
-  currentStep: number;
-  totalSteps: number;
-  percentage: number;
-  estimatedTimeRemaining: number;
-  startTime: number;
-  error?: string;
-}
-
-export interface AppNotification {
-  id: string;
-  type: 'info' | 'success' | 'warning' | 'error';
+  type: 'success' | 'error' | 'warning' | 'info';
   title: string;
   message: string;
-  timestamp: number;
+  timestamp: Date;
   read: boolean;
   action?: {
     label: string;
@@ -63,315 +36,245 @@ export interface AppNotification {
   };
 }
 
+export interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  keywords: string[];
+  targetAudience: string;
+  industry: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface GenerationProgress {
+  id: string;
+  projectId: string;
+  status: 'idle' | 'researching' | 'analyzing' | 'generating' | 'optimizing' | 'complete' | 'error';
+  progress: number; // 0-100
+  currentStep: string;
+  estimatedTimeRemaining?: number;
+  startedAt: Date;
+  completedAt?: Date;
+  error?: string;
+}
+
+export interface AppSettings {
+  theme: 'light' | 'dark' | 'system';
+  language: string;
+  timezone: string;
+  notifications: {
+    email: boolean;
+    push: boolean;
+    desktop: boolean;
+  };
+  contentGeneration: {
+    defaultWordCount: number;
+    defaultTone: string;
+    autoSave: boolean;
+  };
+}
+
 // Store Interface
-interface AppState {
+interface AppStore {
   // Authentication State
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   
-  // Subscription State
-  subscription: UserSubscription | null;
-  usageStats: UsageStats | null;
-  canGenerateContent: boolean;
-  
   // UI State
-  sidebarOpen: boolean;
-  theme: 'light' | 'dark' | 'system';
-  notifications: AppNotification[];
+  sidebarCollapsed: boolean;
+  notifications: Notification[];
+  activeModal: string | null;
   
-  // Content Generation State
-  activeGenerations: Map<string, GenerationProgress>;
+  // Application State
+  currentProject: Project | null;
+  generationProgress: GenerationProgress | null;
+  settings: AppSettings;
   
-  // Actions
+  // Actions - Authentication
   setUser: (user: User | null) => void;
-  setAuthenticated: (authenticated: boolean) => void;
   setLoading: (loading: boolean) => void;
-  setSubscription: (subscription: UserSubscription | null) => void;
-  setUsageStats: (stats: UsageStats | null) => void;
-  updateUsageStats: (updates: Partial<UsageStats>) => void;
+  logout: () => void;
   
-  // UI Actions
+  // Actions - UI
   toggleSidebar: () => void;
-  setSidebarOpen: (open: boolean) => void;
-  setTheme: (theme: 'light' | 'dark' | 'system') => void;
-  
-  // Notification Actions
-  addNotification: (notification: Omit<AppNotification, 'id' | 'timestamp'>) => void;
-  removeNotification: (id: string) => void;
+  setSidebarCollapsed: (collapsed: boolean) => void;
+  addNotification: (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => void;
   markNotificationRead: (id: string) => void;
-  clearAllNotifications: () => void;
+  removeNotification: (id: string) => void;
+  clearNotifications: () => void;
+  setActiveModal: (modal: string | null) => void;
   
-  // Content Generation Actions
-  addGeneration: (id: string, progress: GenerationProgress) => void;
-  updateGeneration: (id: string, updates: Partial<GenerationProgress>) => void;
-  removeGeneration: (id: string) => void;
-  clearCompletedGenerations: () => void;
+  // Actions - Application
+  setCurrentProject: (project: Project | null) => void;
+  setGenerationProgress: (progress: GenerationProgress | null) => void;
+  updateGenerationProgress: (updates: Partial<GenerationProgress>) => void;
+  updateSettings: (settings: Partial<AppSettings>) => void;
   
-  // Utility Actions
+  // Actions - Utilities
   reset: () => void;
 }
 
-// Initial State
-const initialState = {
-  user: null,
-  isAuthenticated: false,
-  isLoading: false,
-  subscription: null,
-  usageStats: null,
-  canGenerateContent: true,
-  sidebarOpen: true,
-  theme: 'system' as const,
-  notifications: [],
-  activeGenerations: new Map(),
+// Default Settings
+const defaultSettings: AppSettings = {
+  theme: 'system',
+  language: 'en',
+  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  notifications: {
+    email: true,
+    push: true,
+    desktop: false,
+  },
+  contentGeneration: {
+    defaultWordCount: 2000,
+    defaultTone: 'professional',
+    autoSave: true,
+  },
 };
 
-// Create Store with Persistence
-export const useAppStore = create<AppState>()(
+// Store Implementation
+export const useAppStore = create<AppStore>()(
   devtools(
     persist(
-      (set, get) => ({
-        ...initialState,
+      immer((set, get) => ({
+        // Initial State
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        sidebarCollapsed: false,
+        notifications: [],
+        activeModal: null,
+        currentProject: null,
+        generationProgress: null,
+        settings: defaultSettings,
         
         // Authentication Actions
-        setUser: (user) => {
-          set({ user, isAuthenticated: !!user }, false, 'setUser');
-        },
+        setUser: (user) => set((state) => {
+          state.user = user;
+          state.isAuthenticated = !!user;
+        }),
         
-        setAuthenticated: (authenticated) => {
-          set({ isAuthenticated: authenticated }, false, 'setAuthenticated');
-        },
+        setLoading: (loading) => set((state) => {
+          state.isLoading = loading;
+        }),
         
-        setLoading: (loading) => {
-          set({ isLoading: loading }, false, 'setLoading');
-        },
-        
-        // Subscription Actions
-        setSubscription: (subscription) => {
-          set({ subscription }, false, 'setSubscription');
-        },
-        
-        setUsageStats: (usageStats) => {
-          set({ usageStats }, false, 'setUsageStats');
-        },
-        
-        updateUsageStats: (updates) => {
-          const currentStats = get().usageStats;
-          if (currentStats) {
-            set(
-              { usageStats: { ...currentStats, ...updates } },
-              false,
-              'updateUsageStats'
-            );
-          }
-        },
+        logout: () => set((state) => {
+          state.user = null;
+          state.isAuthenticated = false;
+          state.currentProject = null;
+          state.generationProgress = null;
+          state.notifications = [];
+        }),
         
         // UI Actions
-        toggleSidebar: () => {
-          set((state) => ({ sidebarOpen: !state.sidebarOpen }), false, 'toggleSidebar');
-        },
+        toggleSidebar: () => set((state) => {
+          state.sidebarCollapsed = !state.sidebarCollapsed;
+        }),
         
-        setSidebarOpen: (open) => {
-          set({ sidebarOpen: open }, false, 'setSidebarOpen');
-        },
+        setSidebarCollapsed: (collapsed) => set((state) => {
+          state.sidebarCollapsed = collapsed;
+        }),
         
-        setTheme: (theme) => {
-          set({ theme }, false, 'setTheme');
-          
-          // Apply theme to document
-          if (typeof window !== 'undefined') {
-            const root = window.document.documentElement;
-            root.classList.remove('light', 'dark');
-            
-            if (theme === 'system') {
-              const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
-                ? 'dark'
-                : 'light';
-              root.classList.add(systemTheme);
-            } else {
-              root.classList.add(theme);
-            }
-          }
-        },
-        
-        // Notification Actions
-        addNotification: (notification) => {
-          const id = `notification-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-          const newNotification: AppNotification = {
+        addNotification: (notification) => set((state) => {
+          const newNotification: Notification = {
             ...notification,
-            id,
-            timestamp: Date.now(),
+            id: crypto.randomUUID(),
+            timestamp: new Date(),
             read: false,
           };
+          state.notifications.unshift(newNotification);
           
-          set(
-            (state) => ({
-              notifications: [newNotification, ...state.notifications],
-            }),
-            false,
-            'addNotification'
-          );
-          
-          // Auto-remove info notifications after 5 seconds
-          if (notification.type === 'info') {
-            setTimeout(() => {
-              get().removeNotification(id);
-            }, 5000);
+          // Keep only last 50 notifications
+          if (state.notifications.length > 50) {
+            state.notifications = state.notifications.slice(0, 50);
           }
-        },
+        }),
         
-        removeNotification: (id) => {
-          set(
-            (state) => ({
-              notifications: state.notifications.filter((n) => n.id !== id),
-            }),
-            false,
-            'removeNotification'
-          );
-        },
+        markNotificationRead: (id) => set((state) => {
+          const notification = state.notifications.find(n => n.id === id);
+          if (notification) {
+            notification.read = true;
+          }
+        }),
         
-        markNotificationRead: (id) => {
-          set(
-            (state) => ({
-              notifications: state.notifications.map((n) =>
-                n.id === id ? { ...n, read: true } : n
-              ),
-            }),
-            false,
-            'markNotificationRead'
-          );
-        },
+        removeNotification: (id) => set((state) => {
+          state.notifications = state.notifications.filter(n => n.id !== id);
+        }),
         
-        clearAllNotifications: () => {
-          set({ notifications: [] }, false, 'clearAllNotifications');
-        },
+        clearNotifications: () => set((state) => {
+          state.notifications = [];
+        }),
         
-        // Content Generation Actions
-        addGeneration: (id, progress) => {
-          set(
-            (state) => {
-              const newGenerations = new Map(state.activeGenerations);
-              newGenerations.set(id, progress);
-              return { activeGenerations: newGenerations };
-            },
-            false,
-            'addGeneration'
-          );
-        },
+        setActiveModal: (modal) => set((state) => {
+          state.activeModal = modal;
+        }),
         
-        updateGeneration: (id, updates) => {
-          set(
-            (state) => {
-              const newGenerations = new Map(state.activeGenerations);
-              const existing = newGenerations.get(id);
-              if (existing) {
-                newGenerations.set(id, { ...existing, ...updates });
-              }
-              return { activeGenerations: newGenerations };
-            },
-            false,
-            'updateGeneration'
-          );
-        },
+        // Application Actions
+        setCurrentProject: (project) => set((state) => {
+          state.currentProject = project;
+        }),
         
-        removeGeneration: (id) => {
-          set(
-            (state) => {
-              const newGenerations = new Map(state.activeGenerations);
-              newGenerations.delete(id);
-              return { activeGenerations: newGenerations };
-            },
-            false,
-            'removeGeneration'
-          );
-        },
+        setGenerationProgress: (progress) => set((state) => {
+          state.generationProgress = progress;
+        }),
         
-        clearCompletedGenerations: () => {
-          set(
-            (state) => {
-              const newGenerations = new Map();
-              state.activeGenerations.forEach((progress, id) => {
-                if (progress.percentage < 100 && !progress.error) {
-                  newGenerations.set(id, progress);
-                }
-              });
-              return { activeGenerations: newGenerations };
-            },
-            false,
-            'clearCompletedGenerations'
-          );
-        },
+        updateGenerationProgress: (updates) => set((state) => {
+          if (state.generationProgress) {
+            Object.assign(state.generationProgress, updates);
+          }
+        }),
+        
+        updateSettings: (newSettings) => set((state) => {
+          Object.assign(state.settings, newSettings);
+        }),
         
         // Utility Actions
-        reset: () => {
-          set(initialState, false, 'reset');
-        },
-      }),
+        reset: () => set((state) => {
+          state.user = null;
+          state.isAuthenticated = false;
+          state.isLoading = false;
+          state.sidebarCollapsed = false;
+          state.notifications = [];
+          state.activeModal = null;
+          state.currentProject = null;
+          state.generationProgress = null;
+          state.settings = defaultSettings;
+        }),
+      })),
       {
-        name: 'app-store',
-        storage: createJSONStorage(() => localStorage),
+        name: 'seo-app-store',
         partialize: (state) => ({
-          // Only persist certain parts of the state
           user: state.user,
           isAuthenticated: state.isAuthenticated,
-          subscription: state.subscription,
-          usageStats: state.usageStats,
-          sidebarOpen: state.sidebarOpen,
-          theme: state.theme,
-          // Don't persist notifications and active generations
+          sidebarCollapsed: state.sidebarCollapsed,
+          settings: state.settings,
         }),
-        version: 1,
-        migrate: (persistedState: any, version: number) => {
-          // Handle state migrations if needed
-          if (version === 0) {
-            // Migration from version 0 to 1
-            return {
-              ...persistedState,
-              theme: persistedState.theme || 'system',
-            };
-          }
-          return persistedState;
-        },
       }
     ),
     {
-      name: 'app-store',
-      enabled: process.env.NODE_ENV === 'development',
+      name: 'SEO App Store',
     }
   )
 );
 
-// Selectors for optimized re-renders
+// Selectors for optimized subscriptions
 export const useUser = () => useAppStore((state) => state.user);
 export const useIsAuthenticated = () => useAppStore((state) => state.isAuthenticated);
-export const useSubscription = () => useAppStore((state) => state.subscription);
-export const useUsageStats = () => useAppStore((state) => state.usageStats);
-export const useTheme = () => useAppStore((state) => state.theme);
 export const useNotifications = () => useAppStore((state) => state.notifications);
-export const useActiveGenerations = () => useAppStore((state) => state.activeGenerations);
+export const useUnreadNotifications = () => useAppStore((state) => 
+  state.notifications.filter(n => !n.read)
+);
+export const useCurrentProject = () => useAppStore((state) => state.currentProject);
+export const useGenerationProgress = () => useAppStore((state) => state.generationProgress);
+export const useSettings = () => useAppStore((state) => state.settings);
+export const useTheme = () => useAppStore((state) => state.settings.theme);
 
-// Computed selectors
-export const useUnreadNotificationCount = () =>
-  useAppStore((state) => state.notifications.filter((n) => !n.read).length);
-
-export const useIsUsageLimitReached = () =>
-  useAppStore((state) => {
-    const stats = state.usageStats;
-    return stats ? stats.current_usage >= stats.usage_limit : false;
-  });
-
-export const useCanGenerateContent = () =>
-  useAppStore((state) => {
-    const subscription = state.subscription;
-    const stats = state.usageStats;
-    
-    if (!subscription || !stats) return false;
-    
-    // Check if subscription is active
-    if (subscription.status !== 'active' && subscription.status !== 'trialing') {
-      return false;
-    }
-    
-    // Check usage limits
-    return stats.current_usage < stats.usage_limit;
-  });
+// Action selectors
+export const useAppActions = () => useAppStore((state) => ({
+  setUser: state.setUser,
+  logout: state.logout,
+  addNotification: state.addNotification,
+  setCurrentProject: state.setCurrentProject,
+  updateSettings: state.updateSettings,
+}));

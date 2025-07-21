@@ -1,74 +1,76 @@
 /**
- * Performance Monitoring System
- * Implements Quinn's recommendation for comprehensive performance tracking
- * Monitors Web Vitals, API calls, content generation, and user interactions
+ * Performance Monitoring Framework
+ * Following ADR-009: Performance Optimization Approach
+ * 
+ * This module provides comprehensive performance monitoring including:
+ * - Web Vitals tracking
+ * - API performance monitoring
+ * - Content generation metrics
+ * - Real-time alerting
  */
 
+import { onCLS, onINP, onFCP, onLCP, onTTFB } from 'web-vitals';
+
 // Types
-interface PerformanceMetric {
-  type: string;
+export interface PerformanceMetric {
   name: string;
   value: number;
+  unit: string;
   timestamp: number;
-  metadata?: Record<string, any>;
+  context?: Record<string, any>;
 }
 
-interface APICallMetric {
+export interface WebVitalsMetric {
+  name: 'CLS' | 'INP' | 'FCP' | 'LCP' | 'TTFB';
+  value: number;
+  delta: number;
+  id: string;
+  rating: 'good' | 'needs-improvement' | 'poor';
+}
+
+export interface APIPerformanceMetric {
   endpoint: string;
   method: string;
   duration: number;
   status: number;
-  success: boolean;
   timestamp: number;
-  userId?: string;
+  size?: number;
+  cached?: boolean;
 }
 
-interface ContentGenerationMetric {
-  contentId: string;
-  keyword: string;
+export interface ContentGenerationMetric {
+  operationId: string;
+  type: 'research' | 'analysis' | 'generation' | 'optimization';
   duration: number;
+  wordCount?: number;
   success: boolean;
-  stage?: string;
-  error?: string;
   timestamp: number;
-  userId?: string;
-}
-
-interface WebVitalMetric {
-  name: string;
-  value: number;
-  rating: 'good' | 'needs-improvement' | 'poor';
-  timestamp: number;
-  url: string;
-}
-
-interface PerformanceAlert {
-  type: string;
-  message: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  metadata: Record<string, any>;
-  timestamp: number;
+  metadata?: Record<string, any>;
 }
 
 // Performance thresholds
 const PERFORMANCE_THRESHOLDS = {
-  API_CALL_SLOW: 5000, // 5 seconds
-  API_CALL_CRITICAL: 10000, // 10 seconds
-  CONTENT_GENERATION_SLOW: 300000, // 5 minutes
-  CONTENT_GENERATION_CRITICAL: 600000, // 10 minutes
-  WEB_VITALS: {
-    LCP: { good: 2500, poor: 4000 },
-    FID: { good: 100, poor: 300 },
-    CLS: { good: 0.1, poor: 0.25 },
-    FCP: { good: 1800, poor: 3000 },
-    TTFB: { good: 800, poor: 1800 },
-  },
-};
+  // Web Vitals (Core Web Vitals)
+  LCP: { good: 2500, poor: 4000 }, // Largest Contentful Paint (ms)
+  FID: { good: 100, poor: 300 },   // First Input Delay (ms)
+  CLS: { good: 0.1, poor: 0.25 },  // Cumulative Layout Shift
+  FCP: { good: 1800, poor: 3000 }, // First Contentful Paint (ms)
+  TTFB: { good: 800, poor: 1800 }, // Time to First Byte (ms)
+  
+  // API Performance
+  API_RESPONSE: { good: 1000, poor: 3000 }, // API response time (ms)
+  
+  // Content Generation
+  CONTENT_GENERATION: { good: 30000, poor: 120000 }, // Content generation (ms)
+} as const;
 
 class PerformanceMonitor {
-  private metrics: Map<string, PerformanceMetric[]> = new Map();
+  private metrics: PerformanceMetric[] = [];
+  private webVitalsMetrics: WebVitalsMetric[] = [];
+  private apiMetrics: APIPerformanceMetric[] = [];
+  private contentMetrics: ContentGenerationMetric[] = [];
+  private observers: Map<string, PerformanceObserver> = new Map();
   private isInitialized = false;
-  private alertCallbacks: ((alert: PerformanceAlert) => void)[] = [];
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -76,412 +78,313 @@ class PerformanceMonitor {
     }
   }
 
-  private initialize(): void {
+  private initialize() {
     if (this.isInitialized) return;
-
-    // Initialize Web Vitals monitoring
-    this.initializeWebVitals();
-
-    // Initialize navigation timing
-    this.initializeNavigationTiming();
-
-    // Initialize resource timing
-    this.initializeResourceTiming();
-
-    // Initialize user interaction monitoring
-    this.initializeUserInteractionMonitoring();
-
+    
+    this.setupWebVitalsTracking();
+    this.setupResourceTimingObserver();
+    this.setupNavigationTimingObserver();
+    this.setupLongTaskObserver();
+    
     this.isInitialized = true;
-    console.log('🔍 Performance Monitor initialized');
   }
 
-  private initializeWebVitals(): void {
-    // Dynamic import to avoid SSR issues
-    import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
-      getCLS(this.handleWebVital);
-      getFID(this.handleWebVital);
-      getFCP(this.handleWebVital);
-      getLCP(this.handleWebVital);
-      getTTFB(this.handleWebVital);
-    }).catch(error => {
-      console.warn('Failed to load web-vitals:', error);
-    });
-  }
+  // Web Vitals Tracking
+  private setupWebVitalsTracking() {
+    const handleMetric = (metric: any) => {
+      const webVitalMetric: WebVitalsMetric = {
+        name: metric.name,
+        value: metric.value,
+        delta: metric.delta,
+        id: metric.id,
+        rating: this.getRating(metric.name, metric.value),
+      };
+      
+      this.webVitalsMetrics.push(webVitalMetric);
+      this.reportMetric({
+        name: `web_vitals_${metric.name.toLowerCase()}`,
+        value: metric.value,
+        unit: metric.name === 'CLS' ? 'score' : 'ms',
+        timestamp: Date.now(),
+        context: {
+          rating: webVitalMetric.rating,
+          id: metric.id,
+        },
+      });
 
-  private handleWebVital = (metric: any): void => {
-    const webVitalMetric: WebVitalMetric = {
-      name: metric.name,
-      value: metric.value,
-      rating: metric.rating,
-      timestamp: Date.now(),
-      url: window.location.href,
+      // Alert on poor performance
+      if (webVitalMetric.rating === 'poor') {
+        this.triggerAlert('web_vitals', `Poor ${metric.name}: ${metric.value}`, webVitalMetric);
+      }
     };
 
-    this.trackWebVital(webVitalMetric);
-
-    // Send to analytics
-    if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('event', metric.name, {
-        event_category: 'Web Vitals',
-        value: Math.round(metric.name === 'CLS' ? metric.value * 1000 : metric.value),
-        event_label: metric.rating,
-        non_interaction: true,
-      });
-    }
-  };
-
-  private initializeNavigationTiming(): void {
-    if ('performance' in window && 'getEntriesByType' in performance) {
-      window.addEventListener('load', () => {
-        setTimeout(() => {
-          const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-          if (navigation) {
-            this.trackNavigationTiming(navigation);
-          }
-        }, 0);
-      });
-    }
+    onCLS(handleMetric);
+    onINP(handleMetric);
+    onFCP(handleMetric);
+    onLCP(handleMetric);
+    onTTFB(handleMetric);
   }
 
-  private initializeResourceTiming(): void {
-    if ('performance' in window && 'getEntriesByType' in performance) {
-      // Monitor resource loading
-      const observer = new PerformanceObserver((list) => {
-        list.getEntries().forEach((entry) => {
-          if (entry.entryType === 'resource') {
-            this.trackResourceTiming(entry as PerformanceResourceTiming);
+  // Resource Timing Observer
+  private setupResourceTimingObserver() {
+    if (!('PerformanceObserver' in window)) return;
+
+    const observer = new PerformanceObserver((list) => {
+      list.getEntries().forEach((entry) => {
+        if (entry.entryType === 'resource') {
+          const resourceEntry = entry as PerformanceResourceTiming;
+          
+          // Track API calls
+          if (resourceEntry.name.includes('/api/')) {
+            this.trackAPIPerformance({
+              endpoint: new URL(resourceEntry.name).pathname,
+              method: 'GET', // Default, can be enhanced
+              duration: resourceEntry.duration,
+              status: 200, // Default, can be enhanced
+              timestamp: Date.now(),
+              size: resourceEntry.transferSize,
+            });
           }
-        });
+        }
       });
-
-      try {
-        observer.observe({ entryTypes: ['resource'] });
-      } catch (error) {
-        console.warn('Performance Observer not supported:', error);
-      }
-    }
-  }
-
-  private initializeUserInteractionMonitoring(): void {
-    // Track long tasks
-    if ('PerformanceObserver' in window) {
-      try {
-        const longTaskObserver = new PerformanceObserver((list) => {
-          list.getEntries().forEach((entry) => {
-            this.trackLongTask(entry);
-          });
-        });
-        longTaskObserver.observe({ entryTypes: ['longtask'] });
-      } catch (error) {
-        console.warn('Long task observer not supported:', error);
-      }
-    }
-
-    // Track user interactions
-    ['click', 'keydown', 'scroll'].forEach(eventType => {
-      document.addEventListener(eventType, this.trackUserInteraction, { passive: true });
     });
+
+    observer.observe({ entryTypes: ['resource'] });
+    this.observers.set('resource', observer);
   }
 
-  // Public API methods
-  trackAPICall(metric: APICallMetric): void {
-    const performanceMetric: PerformanceMetric = {
-      type: 'api_call',
-      name: `${metric.method} ${metric.endpoint}`,
+  // Navigation Timing Observer
+  private setupNavigationTimingObserver() {
+    if (!('PerformanceObserver' in window)) return;
+
+    const observer = new PerformanceObserver((list) => {
+      list.getEntries().forEach((entry) => {
+        if (entry.entryType === 'navigation') {
+          const navEntry = entry as PerformanceNavigationTiming;
+          
+          this.reportMetric({
+            name: 'page_load_time',
+            value: navEntry.loadEventEnd - navEntry.navigationStart,
+            unit: 'ms',
+            timestamp: Date.now(),
+          });
+
+          this.reportMetric({
+            name: 'dom_content_loaded',
+            value: navEntry.domContentLoadedEventEnd - navEntry.navigationStart,
+            unit: 'ms',
+            timestamp: Date.now(),
+          });
+        }
+      });
+    });
+
+    observer.observe({ entryTypes: ['navigation'] });
+    this.observers.set('navigation', observer);
+  }
+
+  // Long Task Observer
+  private setupLongTaskObserver() {
+    if (!('PerformanceObserver' in window)) return;
+
+    const observer = new PerformanceObserver((list) => {
+      list.getEntries().forEach((entry) => {
+        if (entry.entryType === 'longtask') {
+          this.reportMetric({
+            name: 'long_task',
+            value: entry.duration,
+            unit: 'ms',
+            timestamp: Date.now(),
+            context: {
+              startTime: entry.startTime,
+            },
+          });
+
+          // Alert on long tasks
+          if (entry.duration > 100) {
+            this.triggerAlert('long_task', `Long task detected: ${entry.duration}ms`, {
+              duration: entry.duration,
+              startTime: entry.startTime,
+            });
+          }
+        }
+      });
+    });
+
+    observer.observe({ entryTypes: ['longtask'] });
+    this.observers.set('longtask', observer);
+  }
+
+  // API Performance Tracking
+  public trackAPIPerformance(metric: APIPerformanceMetric) {
+    this.apiMetrics.push(metric);
+    
+    this.reportMetric({
+      name: 'api_response_time',
       value: metric.duration,
+      unit: 'ms',
       timestamp: metric.timestamp,
-      metadata: {
+      context: {
         endpoint: metric.endpoint,
         method: metric.method,
         status: metric.status,
-        success: metric.success,
-        userId: metric.userId,
+        cached: metric.cached,
       },
-    };
+    });
 
-    this.addMetric('api_performance', performanceMetric);
-
-    // Check for slow API calls
-    if (metric.duration > PERFORMANCE_THRESHOLDS.API_CALL_SLOW) {
-      this.sendAlert({
-        type: 'slow_api_call',
-        message: `Slow API call: ${metric.endpoint} took ${metric.duration}ms`,
-        severity: metric.duration > PERFORMANCE_THRESHOLDS.API_CALL_CRITICAL ? 'critical' : 'high',
-        metadata: metric,
-        timestamp: Date.now(),
-      });
+    // Alert on slow API responses
+    if (metric.duration > PERFORMANCE_THRESHOLDS.API_RESPONSE.poor) {
+      this.triggerAlert('api_performance', `Slow API response: ${metric.endpoint} (${metric.duration}ms)`, metric);
     }
-
-    // Send to external monitoring
-    this.sendToExternalMonitoring('api_call', performanceMetric);
   }
 
-  trackContentGeneration(metric: ContentGenerationMetric): void {
-    const performanceMetric: PerformanceMetric = {
-      type: 'content_generation',
+  // Content Generation Performance Tracking
+  public trackContentGeneration(metric: ContentGenerationMetric) {
+    this.contentMetrics.push(metric);
+    
+    this.reportMetric({
       name: 'content_generation_time',
       value: metric.duration,
+      unit: 'ms',
       timestamp: metric.timestamp,
-      metadata: {
-        contentId: metric.contentId,
-        keyword: metric.keyword,
+      context: {
+        operationId: metric.operationId,
+        type: metric.type,
+        wordCount: metric.wordCount,
         success: metric.success,
-        stage: metric.stage,
-        error: metric.error,
-        userId: metric.userId,
+        metadata: metric.metadata,
       },
-    };
-
-    this.addMetric('content_performance', performanceMetric);
-
-    // Check for slow content generation
-    if (metric.duration > PERFORMANCE_THRESHOLDS.CONTENT_GENERATION_SLOW) {
-      this.sendAlert({
-        type: 'slow_content_generation',
-        message: `Slow content generation: ${metric.keyword} took ${Math.round(metric.duration / 1000)}s`,
-        severity: metric.duration > PERFORMANCE_THRESHOLDS.CONTENT_GENERATION_CRITICAL ? 'critical' : 'high',
-        metadata: metric,
-        timestamp: Date.now(),
-      });
-    }
-
-    // Send to external monitoring
-    this.sendToExternalMonitoring('content_generation', performanceMetric);
-  }
-
-  trackWebVital(metric: WebVitalMetric): void {
-    const performanceMetric: PerformanceMetric = {
-      type: 'web_vital',
-      name: metric.name,
-      value: metric.value,
-      timestamp: metric.timestamp,
-      metadata: {
-        rating: metric.rating,
-        url: metric.url,
-      },
-    };
-
-    this.addMetric('web_vitals', performanceMetric);
-
-    // Check thresholds
-    const threshold = PERFORMANCE_THRESHOLDS.WEB_VITALS[metric.name as keyof typeof PERFORMANCE_THRESHOLDS.WEB_VITALS];
-    if (threshold && metric.value > threshold.poor) {
-      this.sendAlert({
-        type: 'poor_web_vital',
-        message: `Poor ${metric.name}: ${metric.value} (threshold: ${threshold.poor})`,
-        severity: 'medium',
-        metadata: metric,
-        timestamp: Date.now(),
-      });
-    }
-
-    // Send to external monitoring
-    this.sendToExternalMonitoring('web_vital', performanceMetric);
-  }
-
-  private trackNavigationTiming(navigation: PerformanceNavigationTiming): void {
-    const metrics = [
-      { name: 'dns_lookup', value: navigation.domainLookupEnd - navigation.domainLookupStart },
-      { name: 'tcp_connection', value: navigation.connectEnd - navigation.connectStart },
-      { name: 'request_response', value: navigation.responseEnd - navigation.requestStart },
-      { name: 'dom_processing', value: navigation.domComplete - navigation.domLoading },
-      { name: 'page_load', value: navigation.loadEventEnd - navigation.navigationStart },
-    ];
-
-    metrics.forEach(metric => {
-      if (metric.value > 0) {
-        this.addMetric('navigation_timing', {
-          type: 'navigation_timing',
-          name: metric.name,
-          value: metric.value,
-          timestamp: Date.now(),
-        });
-      }
     });
+
+    // Alert on slow content generation
+    if (metric.duration > PERFORMANCE_THRESHOLDS.CONTENT_GENERATION.poor) {
+      this.triggerAlert('content_generation', `Slow content generation: ${metric.type} (${metric.duration}ms)`, metric);
+    }
   }
 
-  private trackResourceTiming(resource: PerformanceResourceTiming): void {
-    // Only track significant resources
-    if (resource.duration > 100) {
-      this.addMetric('resource_timing', {
-        type: 'resource_timing',
-        name: resource.name,
-        value: resource.duration,
+  // Custom Performance Tracking
+  public startTimer(name: string): () => void {
+    const startTime = performance.now();
+    
+    return () => {
+      const duration = performance.now() - startTime;
+      this.reportMetric({
+        name,
+        value: duration,
+        unit: 'ms',
         timestamp: Date.now(),
-        metadata: {
-          initiatorType: resource.initiatorType,
-          transferSize: resource.transferSize,
+      });
+      
+      return duration;
+    };
+  }
+
+  // Memory Usage Tracking
+  public trackMemoryUsage() {
+    if ('memory' in performance) {
+      const memory = (performance as any).memory;
+      
+      this.reportMetric({
+        name: 'memory_used',
+        value: memory.usedJSHeapSize,
+        unit: 'bytes',
+        timestamp: Date.now(),
+        context: {
+          total: memory.totalJSHeapSize,
+          limit: memory.jsHeapSizeLimit,
         },
       });
     }
   }
 
-  private trackLongTask(entry: PerformanceEntry): void {
-    this.addMetric('long_tasks', {
-      type: 'long_task',
-      name: 'long_task',
-      value: entry.duration,
-      timestamp: Date.now(),
-      metadata: {
-        startTime: entry.startTime,
-      },
-    });
+  // Rating calculation
+  private getRating(metricName: string, value: number): 'good' | 'needs-improvement' | 'poor' {
+    const thresholds = PERFORMANCE_THRESHOLDS[metricName as keyof typeof PERFORMANCE_THRESHOLDS];
+    if (!thresholds) return 'good';
+    
+    if (value <= thresholds.good) return 'good';
+    if (value <= thresholds.poor) return 'needs-improvement';
+    return 'poor';
+  }
 
-    // Alert on very long tasks
-    if (entry.duration > 100) {
-      this.sendAlert({
-        type: 'long_task',
-        message: `Long task detected: ${entry.duration}ms`,
-        severity: entry.duration > 500 ? 'high' : 'medium',
-        metadata: { duration: entry.duration, startTime: entry.startTime },
-        timestamp: Date.now(),
-      });
+  // Metric reporting
+  private reportMetric(metric: PerformanceMetric) {
+    this.metrics.push(metric);
+    
+    // Report to analytics services
+    this.sendToAnalytics(metric);
+    
+    // Log in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📊 Performance Metric:', metric);
     }
   }
 
-  private trackUserInteraction = (event: Event): void => {
-    // Track interaction timing
-    const startTime = performance.now();
-    
-    requestAnimationFrame(() => {
-      const duration = performance.now() - startTime;
-      
-      if (duration > 16) { // More than one frame
-        this.addMetric('user_interactions', {
-          type: 'user_interaction',
-          name: event.type,
-          value: duration,
-          timestamp: Date.now(),
-          metadata: {
-            target: (event.target as Element)?.tagName,
-          },
+  // Analytics integration
+  private sendToAnalytics(metric: PerformanceMetric) {
+    try {
+      // Google Analytics 4
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', 'performance_metric', {
+          metric_name: metric.name,
+          metric_value: metric.value,
+          metric_unit: metric.unit,
+          custom_parameters: metric.context,
         });
       }
-    });
-  };
 
-  private addMetric(category: string, metric: PerformanceMetric): void {
-    if (!this.metrics.has(category)) {
-      this.metrics.set(category, []);
-    }
-
-    const categoryMetrics = this.metrics.get(category)!;
-    categoryMetrics.push(metric);
-
-    // Keep only last 1000 metrics per category
-    if (categoryMetrics.length > 1000) {
-      categoryMetrics.splice(0, categoryMetrics.length - 1000);
-    }
-  }
-
-  private sendAlert(alert: PerformanceAlert): void {
-    // Call registered alert callbacks
-    this.alertCallbacks.forEach(callback => {
-      try {
-        callback(alert);
-      } catch (error) {
-        console.error('Error in alert callback:', error);
+      // Sentry Performance
+      if (typeof window !== 'undefined' && window.Sentry) {
+        window.Sentry.addBreadcrumb({
+          category: 'performance',
+          message: `${metric.name}: ${metric.value}${metric.unit}`,
+          level: 'info',
+          data: metric.context,
+        });
       }
-    });
-
-    // Send to monitoring service
-    this.sendToExternalMonitoring('alert', alert);
-
-    // Log to console in development
-    if (process.env.NODE_ENV === 'development') {
-      console.warn(`🚨 Performance Alert [${alert.severity}]:`, alert.message, alert.metadata);
+    } catch (error) {
+      console.error('Failed to send performance metric to analytics:', error);
     }
   }
 
-  private sendToExternalMonitoring(type: string, data: any): void {
-    // Send to Sentry
-    if (typeof window !== 'undefined' && window.Sentry) {
-      window.Sentry.addBreadcrumb({
-        category: 'performance',
-        message: `${type}: ${data.name || data.type}`,
-        level: 'info',
-        data,
-      });
-    }
-
-    // Send to custom analytics endpoint
-    if (typeof window !== 'undefined') {
-      fetch('/api/analytics/performance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, data, timestamp: Date.now() }),
-      }).catch(error => {
-        console.warn('Failed to send performance data:', error);
-      });
-    }
-  }
-
-  // Public utility methods
-  onAlert(callback: (alert: PerformanceAlert) => void): () => void {
-    this.alertCallbacks.push(callback);
+  // Alert system
+  private triggerAlert(type: string, message: string, data: any) {
+    console.warn(`🚨 Performance Alert [${type}]:`, message, data);
     
-    // Return unsubscribe function
-    return () => {
-      const index = this.alertCallbacks.indexOf(callback);
-      if (index > -1) {
-        this.alertCallbacks.splice(index, 1);
-      }
+    // Send to monitoring service
+    if (typeof window !== 'undefined' && window.Sentry) {
+      window.Sentry.captureMessage(`Performance Alert: ${message}`, 'warning');
+    }
+  }
+
+  // Get performance summary
+  public getPerformanceSummary() {
+    return {
+      webVitals: this.webVitalsMetrics,
+      apiMetrics: this.apiMetrics.slice(-50), // Last 50 API calls
+      contentMetrics: this.contentMetrics.slice(-20), // Last 20 content generations
+      generalMetrics: this.metrics.slice(-100), // Last 100 general metrics
     };
   }
 
-  getMetrics(category?: string): PerformanceMetric[] {
-    if (category) {
-      return this.metrics.get(category) || [];
-    }
-    
-    const allMetrics: PerformanceMetric[] = [];
-    this.metrics.forEach(metrics => allMetrics.push(...metrics));
-    return allMetrics;
-  }
-
-  getPerformanceSummary(): Record<string, any> {
-    const summary: Record<string, any> = {};
-    
-    this.metrics.forEach((metrics, category) => {
-      if (metrics.length > 0) {
-        const values = metrics.map(m => m.value);
-        summary[category] = {
-          count: metrics.length,
-          average: values.reduce((a, b) => a + b, 0) / values.length,
-          min: Math.min(...values),
-          max: Math.max(...values),
-          latest: metrics[metrics.length - 1],
-        };
-      }
-    });
-    
-    return summary;
-  }
-
-  clearMetrics(category?: string): void {
-    if (category) {
-      this.metrics.delete(category);
-    } else {
-      this.metrics.clear();
-    }
+  // Cleanup
+  public destroy() {
+    this.observers.forEach((observer) => observer.disconnect());
+    this.observers.clear();
+    this.isInitialized = false;
   }
 }
 
-// Create singleton instance
+// Singleton instance
 export const performanceMonitor = new PerformanceMonitor();
 
-// Export types
-export type {
-  PerformanceMetric,
-  APICallMetric,
-  ContentGenerationMetric,
-  WebVitalMetric,
-  PerformanceAlert,
-};
-
-// Global type declarations
-declare global {
-  interface Window {
-    gtag?: (command: string, action: string, parameters: any) => void;
-  }
+// React hook for performance monitoring
+export function usePerformanceMonitor() {
+  return {
+    trackAPIPerformance: performanceMonitor.trackAPIPerformance.bind(performanceMonitor),
+    trackContentGeneration: performanceMonitor.trackContentGeneration.bind(performanceMonitor),
+    startTimer: performanceMonitor.startTimer.bind(performanceMonitor),
+    trackMemoryUsage: performanceMonitor.trackMemoryUsage.bind(performanceMonitor),
+    getPerformanceSummary: performanceMonitor.getPerformanceSummary.bind(performanceMonitor),
+  };
 }

@@ -1,59 +1,51 @@
-// Jest Configuration - Enhanced per Quinn's recommendations
-module.exports = {
-  preset: 'ts-jest',
+const nextJest = require('next/jest')
+
+const createJestConfig = nextJest({
+  // Provide the path to your Next.js app to load next.config.js and .env files
+  dir: './',
+})
+
+// Add any custom config to be passed to Jest
+const config = {
+  coverageProvider: 'v8',
   testEnvironment: 'jsdom',
-  roots: ['<rootDir>/src'],
-
-  // Test matching patterns
-  testMatch: [
-    '**/__tests__/**/*.test.{ts,tsx}',
-    '**/?(*.)+(spec|test).{ts,tsx}',
-  ],
-
-  // Ignore integration tests in unit test runs
-  testPathIgnorePatterns: [
-    '<rootDir>/.next/',
-    '<rootDir>/node_modules/',
-    '<rootDir>/src/**/*.integration.test.{ts,tsx}',
-  ],
-
-  // Transform configuration
-  transform: {
-    '^.+\\.tsx?$': ['ts-jest', {
-      tsconfig: {
-        jsx: 'react-jsx',
-      },
-    }],
-  },
-
-  // Module name mapping
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js', '<rootDir>/src/setupTests.ts'],
+  moduleDirectories: ['node_modules', '<rootDir>/'],
+  testPathIgnorePatterns: ['<rootDir>/.next/', '<rootDir>/node_modules/', '<rootDir>/e2e/'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
-    '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$':
-      '<rootDir>/src/__mocks__/fileMock.js',
+    '^@/components/(.*)$': '<rootDir>/src/components/$1',
+    '^@/lib/(.*)$': '<rootDir>/src/lib/$1',
+    '^@/hooks/(.*)$': '<rootDir>/src/hooks/$1',
+    '^@/types/(.*)$': '<rootDir>/src/types/$1',
+    '^@/providers/(.*)$': '<rootDir>/src/providers/$1',
+    '^@/store/(.*)$': '<rootDir>/src/store/$1',
+    '^@/services/(.*)$': '<rootDir>/src/services/$1',
   },
-
-  // Setup files
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
-
-  // Coverage configuration - Quinn's strict standards
   collectCoverageFrom: [
-    'src/**/*.{ts,tsx}',
+    'src/**/*.{js,jsx,ts,tsx}',
     '!src/**/*.d.ts',
-    '!src/**/*.stories.{ts,tsx}',
-    '!src/**/*.config.{ts,tsx}',
+    '!src/**/*.stories.{js,jsx,ts,tsx}',
+    '!src/**/*.config.{js,jsx,ts,tsx}',
     '!src/app/globals.css',
     '!src/app/layout.tsx',
     '!src/middleware.ts',
-    '!src/mocks/**/*',
-    '!src/__tests__/**/*',
-    '!src/test/**/*',
     '!**/node_modules/**',
     '!**/.next/**',
+    '!**/build/**',
+    '!**/coverage/**',
   ],
-
-  // Coverage thresholds - Quinn's 90% requirement
+  // Enhanced reporting for Quinn's quality standards
+  coverageReporters: [
+    'text',
+    'text-summary',
+    'html',
+    'lcov',
+    'json-summary',
+    'cobertura',
+  ],
+  coverageDirectory: 'coverage',
+  // Quinn's strict coverage thresholds (90% requirement)
   coverageThreshold: {
     global: {
       branches: 90,
@@ -61,46 +53,48 @@ module.exports = {
       lines: 90,
       statements: 90,
     },
-    // Specific thresholds for critical modules
-    'src/lib/content-generation/**/*.{ts,tsx}': {
+    // Critical modules require 95% coverage
+    'src/lib/ai/**/*.ts': {
       branches: 95,
       functions: 95,
       lines: 95,
       statements: 95,
     },
-    'src/lib/seo-analysis/**/*.{ts,tsx}': {
+    'src/lib/pipeline/**/*.ts': {
+      branches: 95,
+      functions: 95,
+      lines: 95,
+      statements: 95,
+    },
+    'src/lib/content/**/*.ts': {
+      branches: 95,
+      functions: 95,
+      lines: 95,
+      statements: 95,
+    },
+    'src/lib/monitoring/**/*.ts': {
       branches: 95,
       functions: 95,
       lines: 95,
       statements: 95,
     },
   },
-
-  // Coverage reporting
-  coverageReporters: ['text', 'lcov', 'html', 'json-summary'],
-  coverageDirectory: 'coverage',
-
-  // Test timeout and performance
+  testMatch: [
+    '**/__tests__/**/*.{js,jsx,ts,tsx}',
+    '**/?(*.)+(spec|test).{js,jsx,ts,tsx}',
+  ],
   testTimeout: 30000,
-  maxWorkers: '50%',
-
-  // Verbose output for debugging
   verbose: true,
-
-  // Mock configuration
   clearMocks: true,
   resetMocks: true,
   restoreMocks: true,
+  // Transform configuration optimized for Next.js
+  transformIgnorePatterns: [
+    '/node_modules/',
+    '^.+\\.module\\.(css|sass|scss)$',
+  ],
+  watchPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/.next/'],
+}
 
-  // Global test configuration
-  globals: {
-    'ts-jest': {
-      isolatedModules: true,
-    },
-  },
-
-  // Test environment options
-  testEnvironmentOptions: {
-    url: 'http://localhost:3000',
-  },
-};
+// createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
+module.exports = createJestConfig(config)

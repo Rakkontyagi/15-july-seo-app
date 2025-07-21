@@ -1,4 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr'
+import type { Database } from '@/types/database'
 
 // Validate environment variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -9,7 +10,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const createClient = () =>
-  createBrowserClient(
+  createBrowserClient<Database>(
     supabaseUrl,
     supabaseAnonKey,
     {

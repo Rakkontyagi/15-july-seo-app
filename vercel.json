@@ -1,31 +1,87 @@
 {
   "version": 2,
-  "installCommand": "npm install --legacy-peer-deps",
+  "builds": [
+    {
+      "src": "next.config.ts",
+      "use": "@vercel/next"
+    }
+  ],
   "functions": {
-    "app/api/content/generate.ts": {
-      "maxDuration": 300
+    "src/app/api/content/generate/route.ts": {
+      "maxDuration": 300,
+      "memory": 3008
     },
-    "app/api/serp/analyze.ts": {
-      "maxDuration": 60
+    "src/app/api/content/bulk/route.ts": {
+      "maxDuration": 600,
+      "memory": 3008
     },
-    "app/api/content/analyze.ts": {
-      "maxDuration": 120
+    "src/app/api/cms/publish/route.ts": {
+      "maxDuration": 120,
+      "memory": 1024
     },
-    "app/api/content/optimize.ts": {
-      "maxDuration": 180
+    "src/app/api/cms/test/route.ts": {
+      "maxDuration": 30,
+      "memory": 512
+    },
+    "src/app/api/serp/analyze/route.ts": {
+      "maxDuration": 60,
+      "memory": 1024
+    },
+    "src/app/api/content/scrape/route.ts": {
+      "maxDuration": 120,
+      "memory": 1024
+    },
+    "src/app/api/ai/generate/route.ts": {
+      "maxDuration": 180,
+      "memory": 1024
+    },
+    "src/app/api/health/route.ts": {
+      "maxDuration": 10
+    },
+    "src/app/api/metrics/route.ts": {
+      "maxDuration": 10
     }
   },
-  "env": {
-    "NEXT_PUBLIC_SUPABASE_URL": "https://xpcbyzcaidfukddqniny.supabase.co",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwY2J5emNhaWRmdWtkZHFuaW55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY3OTA1MzYsImV4cCI6MjA2MjM2NjUzNn0.k6gsHXOoRFTc-lYTn3gvH-pB71tXwTVzQF5OFu5mV1A",
-    "SUPABASE_SERVICE_ROLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwY2J5emNhaWRmdWtkZHFuaW55Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0Njc5MDUzNywiZXhwIjoyMDYyMzY2NTM3fQ.rcH_G_p6zeqz1LPhGvJIDDnKwu7bXjY7qqBFMw9ZTC4",
-    "OPENAI_API_KEY": "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",
-    "SERPER_API_KEY": "4ce37b02808e4325e42068eb815b03490a5519e5",
-    "FIRECRAWL_API_KEY": "fc-4ba88920f7414c93aadb7f6e8752e6c5",
-    "SUPABASE_URL": "https://xpcbyzcaidfukddqniny.supabase.co",
-    "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwY2J5emNhaWRmdWtkZHFuaW55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY3OTA1MzYsImV4cCI6MjA2MjM2NjUzNn0.k6gsHXOoRFTc-lYTn3gvH-pB71tXwTVzQF5OFu5mV1A"
-  },
+  "regions": ["iad1", "sfo1"],
+  "buildCommand": "npm run build",
+  "installCommand": "npm install --legacy-peer-deps",
+  "framework": "nextjs",
+  "crons": [
+    {
+      "path": "/api/health",
+      "schedule": "0 */5 * * *"
+    }
+  ],
   "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Environment",
+          "value": "production"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        }
+      ]
+    },
     {
       "source": "/api/(.*)",
       "headers": [
@@ -46,12 +102,19 @@
   ],
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "/api/:path*"
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
     }
   ],
-  "regions": ["iad1"],
-  "github": {
-    "silent": true
+  "env": {
+    "NEXT_PUBLIC_SUPABASE_URL": "@supabase-url",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase-anon-key",
+    "SUPABASE_SERVICE_ROLE_KEY": "@supabase-service-role-key",
+    "OPENAI_API_KEY": "@openai-api-key",
+    "ANTHROPIC_API_KEY": "@anthropic-api-key",
+    "SERPER_API_KEY": "@serper-api-key",
+    "FIRECRAWL_API_KEY": "@firecrawl-api-key",
+    "NEXTAUTH_SECRET": "@nextauth-secret",
+    "NEXT_PUBLIC_SITE_URL": "@site-url"
   }
 }

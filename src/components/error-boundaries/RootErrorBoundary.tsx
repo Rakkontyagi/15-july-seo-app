@@ -1,18 +1,23 @@
 /**
- * Root Error Boundary Component
- * Implements Quinn's recommendation for comprehensive error boundary hierarchy
- * Catches all unhandled errors at the application level
+ * Root Error Boundary - Application Level Error Handling
+ * Following ADR-008: Error Handling and Recovery Strategy
+ * 
+ * This component provides the top-level error boundary for the entire application,
+ * catching any unhandled errors and providing a graceful fallback UI.
  */
 
 'use client';
 
-import React, { Component, ReactNode, ErrorInfo } from 'react';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home, Bug } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { createComponentLogger } from '@/lib/logging/logger';
 
 interface Props {
   children: ReactNode;
+  fallback?: ReactNode;
+  onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
 
 interface State {
@@ -23,6 +28,10 @@ interface State {
 }
 
 export class RootErrorBoundary extends Component<Props, State> {
+  private retryCount = 0;
+  private maxRetries = 3;
+  private logger = createComponentLogger('RootErrorBoundary');
+
   constructor(props: Props) {
     super(props);
     this.state = {
@@ -38,44 +47,42 @@ export class RootErrorBoundary extends Component<Props, State> {
     return {
       hasError: true,
       error,
-      errorId: `error-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      errorId: crypto.randomUUID(),
     };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log error to monitoring service
-    this.logErrorToService(error, errorInfo);
-    
-    // Update state with error info
+    // Log error details
     this.setState({
+      error,
       errorInfo,
     });
 
-    // Log to console in development
-    if (process.env.NODE_ENV === 'development') {
-      console.group('🚨 Root Error Boundary - Application Error');
-      console.error('Error:', error);
-      console.error('Error Info:', errorInfo);
-      console.error('Component Stack:', errorInfo.componentStack);
-      console.groupEnd();
-    }
+    // Report to error tracking service
+    this.reportError(error, errorInfo);
+
+    // Call custom error handler if provided
+    this.props.onError?.(error, errorInfo);
   }
 
-  private logErrorToService = (error: Error, errorInfo: ErrorInfo) => {
+  private reportError = async (error: Error, errorInfo: ErrorInfo) => {
     try {
-      // Send to monitoring service (Sentry, LogRocket, etc.)
+      // Report to Sentry or other error tracking service
       if (typeof window !== 'undefined' && window.Sentry) {
-        window.Sentry.addBreadcrumb({
-          message: 'Error caught by RootErrorBoundary',
-          level: 'error',
-          data: {
-            componentStack: errorInfo.componentStack,
+        window.Sentry.captureException(error, {
+          contexts: {
+            react: {
+              componentStack: errorInfo.componentStack,
+            },
+          },
+          tags: {
             errorBoundary: 'RootErrorBoundary',
+            retryCount: this.retryCount,
           },
         });
       }
 
-      // Send to custom analytics
+      // Report to custom analytics
       if (typeof window !== 'undefined' && window.gtag) {
         window.gtag('event', 'exception', {
           description: error.message,
@@ -84,42 +91,32 @@ export class RootErrorBoundary extends Component<Props, State> {
         });
       }
 
-      // Log to server endpoint for analysis
-      fetch('/api/errors', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          error: {
-            message: error.message,
-            stack: error.stack,
-            name: error.name,
-          },
-          errorInfo: {
-            componentStack: errorInfo.componentStack,
-          },
-          errorId: this.state.errorId,
-          timestamp: new Date().toISOString(),
-          userAgent: navigator.userAgent,
-          url: window.location.href,
-          userId: this.getCurrentUserId(),
-        }),
-      }).catch((fetchError) => {
-        console.error('Failed to log error to server:', fetchError);
+      // Log error with centralized logger
+      this.logger.error('Root Error Boundary caught error', {
+        error: error.message,
+        stack: error.stack,
+        componentStack: errorInfo.componentStack,
+        errorId: this.state.errorId,
+        retryCount: this.retryCount,
+        isDevelopment: process.env.NODE_ENV === 'development'
       });
-    } catch (loggingError) {
-      console.error('Error in error logging:', loggingError);
+    } catch (reportingError) {
+      this.logger.error('Failed to report error to external services', {
+        reportingError: reportingError instanceof Error ? reportingError.message : reportingError,
+        originalError: error.message
+      });
     }
   };
 
-  private getCurrentUserId = (): string | null => {
-    try {
-      // Get user ID from your auth system
-      const user = JSON.parse(localStorage.getItem('user') || 'null');
-      return user?.id || null;
-    } catch {
-      return null;
+  private handleRetry = () => {
+    if (this.retryCount < this.maxRetries) {
+      this.retryCount++;
+      this.setState({
+        hasError: false,
+        error: null,
+        errorInfo: null,
+        errorId: null,
+      });
     }
   };
 
@@ -128,57 +125,56 @@ export class RootErrorBoundary extends Component<Props, State> {
   };
 
   private handleGoHome = () => {
-    window.location.href = '/';
+    window.location.href = '/dashboard';
   };
 
   private handleReportBug = () => {
-    const subject = encodeURIComponent(`Bug Report: ${this.state.error?.message || 'Application Error'}`);
-    const body = encodeURIComponent(`
-Error ID: ${this.state.errorId}
-Error Message: ${this.state.error?.message}
-Timestamp: ${new Date().toISOString()}
-URL: ${window.location.href}
-User Agent: ${navigator.userAgent}
+    const { error, errorInfo, errorId } = this.state;
+    const bugReport = {
+      errorId,
+      message: error?.message,
+      stack: error?.stack,
+      componentStack: errorInfo?.componentStack,
+      userAgent: navigator.userAgent,
+      url: window.location.href,
+      timestamp: new Date().toISOString(),
+    };
 
-Please describe what you were doing when this error occurred:
-[Your description here]
-    `);
+    // Open bug report with pre-filled information
+    const githubUrl = `https://github.com/your-repo/issues/new?title=Error%20Report%20${errorId}&body=${encodeURIComponent(
+      `**Error ID:** ${errorId}\n\n**Error Message:** ${error?.message}\n\n**Stack Trace:**\n\`\`\`\n${error?.stack}\n\`\`\`\n\n**Component Stack:**\n\`\`\`\n${errorInfo?.componentStack}\n\`\`\`\n\n**Environment:**\n- URL: ${window.location.href}\n- User Agent: ${navigator.userAgent}\n- Timestamp: ${new Date().toISOString()}`
+    )}`;
     
-    window.open(`mailto:support@example.com?subject=${subject}&body=${body}`);
-  };
-
-  private resetError = () => {
-    this.setState({
-      hasError: false,
-      error: null,
-      errorInfo: null,
-      errorId: null,
-    });
+    window.open(githubUrl, '_blank');
   };
 
   render() {
     if (this.state.hasError) {
+      // Custom fallback UI if provided
+      if (this.props.fallback) {
+        return this.props.fallback;
+      }
+
+      // Default error UI
       return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
           <Card className="w-full max-w-2xl">
             <CardHeader className="text-center">
-              <div className="mx-auto mb-4 w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-                <AlertTriangle className="w-8 h-8 text-red-600" />
+              <div className="mx-auto mb-4 w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-8 h-8 text-destructive" />
               </div>
-              <CardTitle className="text-2xl font-bold text-gray-900">
-                Oops! Something went wrong
-              </CardTitle>
-              <CardDescription className="text-lg text-gray-600">
-                We're sorry, but an unexpected error occurred. Our team has been notified.
+              <CardTitle className="text-2xl">Something went wrong</CardTitle>
+              <CardDescription className="text-base">
+                We encountered an unexpected error. Our team has been notified and is working on a fix.
               </CardDescription>
             </CardHeader>
             
             <CardContent className="space-y-6">
               {/* Error Details (Development Only) */}
               {process.env.NODE_ENV === 'development' && this.state.error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-red-800 mb-2">Error Details (Development)</h3>
-                  <div className="text-sm text-red-700 space-y-2">
+                <div className="bg-muted p-4 rounded-lg">
+                  <h4 className="font-semibold mb-2 text-sm">Error Details (Development)</h4>
+                  <div className="text-xs font-mono text-muted-foreground space-y-2">
                     <div>
                       <strong>Message:</strong> {this.state.error.message}
                     </div>
@@ -187,8 +183,10 @@ Please describe what you were doing when this error occurred:
                     </div>
                     {this.state.error.stack && (
                       <details className="mt-2">
-                        <summary className="cursor-pointer font-medium">Stack Trace</summary>
-                        <pre className="mt-2 text-xs bg-red-100 p-2 rounded overflow-auto">
+                        <summary className="cursor-pointer hover:text-foreground">
+                          Stack Trace
+                        </summary>
+                        <pre className="mt-2 text-xs overflow-auto max-h-40 bg-background p-2 rounded border">
                           {this.state.error.stack}
                         </pre>
                       </details>
@@ -198,12 +196,12 @@ Please describe what you were doing when this error occurred:
               )}
 
               {/* Error ID for Production */}
-              {process.env.NODE_ENV === 'production' && (
-                <div className="bg-gray-100 border border-gray-200 rounded-lg p-4 text-center">
-                  <p className="text-sm text-gray-600">
-                    Error ID: <code className="bg-gray-200 px-2 py-1 rounded text-xs">{this.state.errorId}</code>
+              {process.env.NODE_ENV === 'production' && this.state.errorId && (
+                <div className="bg-muted p-3 rounded text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Error ID: <code className="font-mono">{this.state.errorId}</code>
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Please include this ID when reporting the issue
                   </p>
                 </div>
@@ -211,57 +209,43 @@ Please describe what you were doing when this error occurred:
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-3">
-                <Button 
-                  onClick={this.resetError}
-                  className="flex-1 flex items-center justify-center gap-2"
-                  variant="default"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Try Again
+                {this.retryCount < this.maxRetries && (
+                  <Button onClick={this.handleRetry} className="flex-1">
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Try Again ({this.maxRetries - this.retryCount} attempts left)
+                  </Button>
+                )}
+                
+                <Button onClick={this.handleGoHome} variant="outline" className="flex-1">
+                  <Home className="w-4 h-4 mr-2" />
+                  Go to Dashboard
                 </Button>
                 
-                <Button 
-                  onClick={this.handleReload}
-                  className="flex-1 flex items-center justify-center gap-2"
-                  variant="outline"
-                >
-                  <RefreshCw className="w-4 h-4" />
+                <Button onClick={this.handleReload} variant="outline" className="flex-1">
+                  <RefreshCw className="w-4 h-4 mr-2" />
                   Reload Page
-                </Button>
-                
-                <Button 
-                  onClick={this.handleGoHome}
-                  className="flex-1 flex items-center justify-center gap-2"
-                  variant="outline"
-                >
-                  <Home className="w-4 h-4" />
-                  Go Home
                 </Button>
               </div>
 
               {/* Report Bug Button */}
               <div className="text-center">
-                <Button 
-                  onClick={this.handleReportBug}
-                  variant="ghost"
-                  size="sm"
-                  className="text-gray-500 hover:text-gray-700"
-                >
+                <Button onClick={this.handleReportBug} variant="ghost" size="sm">
                   <Bug className="w-4 h-4 mr-2" />
                   Report this issue
                 </Button>
               </div>
 
               {/* Help Text */}
-              <div className="text-center text-sm text-gray-500">
+              <div className="text-center text-sm text-muted-foreground">
                 <p>
-                  If this problem persists, please contact our support team at{' '}
+                  If this problem persists, please{' '}
                   <a 
-                    href="mailto:support@example.com" 
-                    className="text-blue-600 hover:text-blue-800 underline"
+                    href="mailto:support@seoapp.com" 
+                    className="text-primary hover:underline"
                   >
-                    support@example.com
-                  </a>
+                    contact support
+                  </a>{' '}
+                  or try refreshing the page.
                 </p>
               </div>
             </CardContent>
@@ -274,15 +258,49 @@ Please describe what you were doing when this error occurred:
   }
 }
 
-// Type declarations for global objects
-declare global {
-  interface Window {
-    Sentry?: {
-      addBreadcrumb: (breadcrumb: any) => void;
-      withScope: (callback: (scope: any) => void) => void;
-      captureException: (error: Error) => void;
-      captureMessage: (message: string, options?: any) => void;
-    };
-    gtag?: (command: string, action: string, parameters: any) => void;
-  }
+// Higher-order component for easier usage
+export function withErrorBoundary<P extends object>(
+  Component: React.ComponentType<P>,
+  errorBoundaryProps?: Omit<Props, 'children'>
+) {
+  const WrappedComponent = (props: P) => (
+    <RootErrorBoundary {...errorBoundaryProps}>
+      <Component {...props} />
+    </RootErrorBoundary>
+  );
+
+  WrappedComponent.displayName = `withErrorBoundary(${Component.displayName || Component.name})`;
+  
+  return WrappedComponent;
+}
+
+// Hook for error reporting from components
+export function useErrorReporting() {
+  const logger = createComponentLogger('useErrorReporting');
+  
+  const reportError = React.useCallback((error: Error, context?: Record<string, any>) => {
+    try {
+      if (typeof window !== 'undefined' && window.Sentry) {
+        window.Sentry.captureException(error, {
+          extra: context,
+          tags: {
+            source: 'manual-report',
+          },
+        });
+      }
+
+      logger.error('Manual error report from component', {
+        error: error.message,
+        stack: error.stack,
+        context
+      });
+    } catch (reportingError) {
+      logger.error('Failed to report error', {
+        reportingError: reportingError instanceof Error ? reportingError.message : reportingError,
+        originalError: error.message
+      });
+    }
+  }, [logger]);
+
+  return { reportError };
 }
