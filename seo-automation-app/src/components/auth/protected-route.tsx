@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Crown, Lock } from 'lucide-react';
 import { supabase } from '@/lib/supabase/auth';
+import { createComponentLogger } from '@/lib/logging/logger';
 
 type SubscriptionTier = 'free' | 'basic' | 'pro' | 'enterprise';
 
@@ -65,14 +66,16 @@ export function ProtectedRoute({
           .single();
 
         if (error) {
-          console.error('Failed to fetch subscription tier:', error);
+          const logger = createComponentLogger('protected-route');
+      logger.error('Failed to fetch subscription tier:', { error: error instanceof Error ? error.message : error });
           // Fallback to free tier if query fails
           setUserSubscriptionTier('free');
         } else {
           setUserSubscriptionTier(profile.subscription_tier || 'free');
         }
       } catch (error) {
-        console.error('Error fetching subscription:', error);
+        const logger = createComponentLogger('protected-route');
+      logger.error('Error fetching subscription:', { error: error instanceof Error ? error.message : error });
         setUserSubscriptionTier('free');
       } finally {
         setSubscriptionLoading(false);

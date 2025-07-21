@@ -3,6 +3,7 @@
  * Provides Cross-Site Request Forgery protection for forms and API endpoints
  */
 
+import React from 'react';
 import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes, createHmac, timingSafeEqual } from 'crypto';
 import { logger } from '@/lib/logging/logger';
@@ -306,14 +307,12 @@ export function withCSRFProtection<T extends Record<string, any>>(
     }, [csrfToken, getToken]);
 
     if (!csrfToken) {
-      return <div>Loading...</div>;
+      return React.createElement('div', null, 'Loading...');
     }
 
-    return (
-      <>
-        <input type="hidden" name="csrf-token" value={csrfToken} />
-        <FormComponent {...props} />
-      </>
+    return React.createElement(React.Fragment, null,
+      React.createElement('input', { type: 'hidden', name: 'csrf-token', value: csrfToken }),
+      React.createElement(FormComponent, props)
     );
   };
 }

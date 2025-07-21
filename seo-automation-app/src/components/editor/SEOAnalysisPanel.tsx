@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createComponentLogger } from '@/lib/logging/logger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -152,7 +153,8 @@ export function SEOAnalysisPanel({ content, targetKeyword, onApplySuggestion }: 
       
       setAnalysis(mockAnalysis);
     } catch (error) {
-      console.error('Analysis failed:', error);
+      const logger = createComponentLogger('SEOAnalysisPanel');
+      logger.error('SEO analysis failed', { error: error instanceof Error ? error.message : error });
     } finally {
       setIsAnalyzing(false);
     }

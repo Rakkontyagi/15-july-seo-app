@@ -4,20 +4,12 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import ContentEditor from '../ContentEditor';
 
-// Mock ReactQuill since it requires DOM
-jest.mock('react-quill', () => {
-  return function MockReactQuill({ value, onChange, placeholder }: any) {
-    return (
-      <div data-testid="react-quill-mock">
-        <textarea
-          data-testid="quill-editor"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-        />
-      </div>
-    );
-  };
+// Mock document.execCommand for contentEditable tests
+beforeAll(() => {
+  Object.defineProperty(document, 'execCommand', {
+    value: jest.fn(() => true),
+    writable: true,
+  });
 });
 
 // Mock the content sanitizer
@@ -49,13 +41,17 @@ describe('ContentEditor', () => {
 
   it('renders without crashing', () => {
     render(<ContentEditor {...defaultProps} />);
-    expect(screen.getByTestId('react-quill-mock')).toBeInTheDocument();
+    // Look for the contentEditable div
+    const editor = screen.getByRole('textbox');
+    expect(editor).toBeInTheDocument();
   });
 
   it('displays the correct placeholder', () => {
     const placeholder = 'Custom placeholder text';
     render(<ContentEditor {...defaultProps} placeholder={placeholder} />);
-    expect(screen.getByPlaceholderText(placeholder)).toBeInTheDocument();
+    // The placeholder is set as a data attribute on the contentEditable div
+    const editor = screen.getByRole('textbox');
+    expect(editor).toHaveAttribute('data-placeholder', placeholder);
   });
 
   it('calls onChange when content changes', async () => {
@@ -64,7 +60,7 @@ describe('ContentEditor', () => {
     
     render(<ContentEditor {...defaultProps} onChange={onChange} />);
     
-    const editor = screen.getByTestId('quill-editor');
+    const editor = screen.getByRole('textbox');
     await user.type(editor, 'Hello World');
     
     expect(onChange).toHaveBeenCalled();

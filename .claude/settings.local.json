@@ -40,7 +40,17 @@
       "mcp__context7__resolve-library-id",
       "mcp__context7__get-library-docs",
       "Bash(timeout 30s npx eslint src/lib/utils/cn.ts)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git rm:*)",
+      "Bash(cd:*)",
+      "Bash(cd:*)",
+      "Bash(cd:*)",
+      "Bash(cd:*)",
+      "Bash(cd:*)",
+      "Bash(npm:*)",
+      "Bash(cd:*)",
+      "Bash(cd:*)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=2048\" npm run build)"
     ],
     "deny": []
   }

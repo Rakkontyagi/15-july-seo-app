@@ -26,6 +26,7 @@ import {
   AlertTriangle,
   CheckCircle
 } from 'lucide-react';
+import { createComponentLogger } from '@/lib/logging/logger';
 
 interface DashboardMetric {
   id: string;
@@ -192,7 +193,8 @@ export function AdvancedDashboardOverview() {
       setMetrics(mockMetrics);
       setRecentActivity(mockActivity);
     } catch (error) {
-      console.error('Failed to load dashboard data:', error);
+      const logger = createComponentLogger('AdvancedDashboardOverview');
+      logger.error('Failed to load dashboard data:', { error: error instanceof Error ? error.message : error });
     } finally {
       setIsLoading(false);
     }

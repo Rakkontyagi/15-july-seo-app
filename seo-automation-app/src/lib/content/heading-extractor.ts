@@ -127,7 +127,7 @@ export class HeadingExtractor {
       // ATX-style headers (# ## ### etc.)
       const atxMatch = trimmedLine.match(/^(#{1,6})\s+(.+)$/);
       if (atxMatch) {
-        const level = atxMatch[1].length as 1 | 2 | 3 | 4 | 5 | 6;
+        const level = (atxMatch[1] ? atxMatch[1].length : 1) as 1 | 2 | 3 | 4 | 5 | 6;
         const text = atxMatch[2].trim();
 
         if (text || this.options.includeEmptyHeadings) {

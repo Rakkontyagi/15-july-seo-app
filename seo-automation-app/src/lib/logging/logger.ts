@@ -177,28 +177,45 @@ class Logger {
   }
 
   /**
-   * Output to console with appropriate styling
+   * Output to console with appropriate styling (Production-Safe)
    */
   private logToConsole(logEntry: LogEntry): void {
     const { level, message, timestamp, context } = logEntry;
     const prefix = `[${timestamp}] [${level.toUpperCase()}]`;
+    const formattedMessage = `${prefix} ${message}`;
+    const contextStr = context ? ` ${JSON.stringify(context)}` : '';
+    const fullMessage = `${formattedMessage}${contextStr}`;
     
-    switch (level) {
-      case LogLevel.DEBUG:
-        console.debug(prefix, message, context || '');
-        break;
-      case LogLevel.INFO:
-        console.info(prefix, message, context || '');
-        break;
-      case LogLevel.WARN:
-        console.warn(prefix, message, context || '');
-        break;
-      case LogLevel.ERROR:
-        console.error(prefix, message, context || '');
-        if (context?.stack) {
-          console.error('Stack trace:', context.stack);
+    // In production, only log errors and warnings to stderr, everything else to stdout
+    if (typeof window === 'undefined') {
+      // Server-side: Use process.stdout/stderr instead of console
+      const output = level === LogLevel.ERROR || level === LogLevel.WARN ? process.stderr : process.stdout;
+      output.write(fullMessage + '\n');
+      
+      if (level === LogLevel.ERROR && context?.stack) {
+        process.stderr.write(`Stack trace: ${context.stack}\n`);
+      }
+    } else {
+      // Client-side: Only in development mode
+      if (process.env.NODE_ENV === 'development') {
+        switch (level) {
+          case LogLevel.DEBUG:
+            console.debug(prefix, message, context || '');
+            break;
+          case LogLevel.INFO:
+            console.info(prefix, message, context || '');
+            break;
+          case LogLevel.WARN:
+            console.warn(prefix, message, context || '');
+            break;
+          case LogLevel.ERROR:
+            console.error(prefix, message, context || '');
+            if (context?.stack) {
+              console.error('Stack trace:', context.stack);
+            }
+            break;
         }
-        break;
+      }
     }
   }
 
@@ -222,7 +239,10 @@ class Logger {
       }
     } catch (error) {
       // Silently fail for logging errors to avoid infinite loops
-      console.error('Failed to send log to remote service:', error);
+      // Use process.stderr instead of console to avoid recursion
+      if (typeof window === 'undefined') {
+        process.stderr.write(`[${new Date().toISOString()}] [ERROR] Failed to send log to remote service: ${error}\n`);
+      }
     }
   }
 

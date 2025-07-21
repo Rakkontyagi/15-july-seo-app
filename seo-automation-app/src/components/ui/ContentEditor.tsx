@@ -1,8 +1,8 @@
+'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import ReactQuill from 'react-quill';
-import { Shield, AlertTriangle, CheckCircle } from 'lucide-react';
-import 'react-quill/dist/quill.snow.css'; // Import Quill's CSS
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { Shield, AlertTriangle, CheckCircle, Bold, Italic, Underline, List, Link } from 'lucide-react';
+import { Button } from './button';
 import { contentSanitizer, SANITIZATION_CONFIGS } from '@/lib/security/content-sanitizer';
 
 interface ContentEditorProps {
@@ -15,54 +15,26 @@ interface ContentEditorProps {
   onSanitizationReport?: (report: any) => void;
 }
 
-const ContentEditor: React.FC<ContentEditorProps> = ({
+export const ContentEditor: React.FC<ContentEditorProps> = ({
   value,
   onChange,
   placeholder = 'Start writing your content here...',
-  className,
+  className = '',
   enableSanitization = true,
   sanitizationLevel = 'rich',
   onSanitizationReport,
 }) => {
   const [sanitizationWarning, setSanitizationWarning] = useState<string | null>(null);
   const [lastSanitizedValue, setLastSanitizedValue] = useState<string>('');
-  const quillRef = useRef<ReactQuill>(null);
-
-  const modules = useMemo(() => ({
-    toolbar: [
-      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-      ['bold', 'italic', 'underline', 'strike'],        // toggled buttons
-      ['blockquote', 'code-block'],
-
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      [{ 'script': 'sub'}, { 'script': 'super' }],      // superscript/subscript
-      [{ 'indent': '-1'}, { 'indent': '+1' }],          // outdent/indent
-      [{ 'direction': 'rtl' }],                         // text direction
-
-      [{ 'size': ['small', false, 'large', 'huge'] }],  // custom dropdown
-      [{ 'color': [] }, { 'background': [] }],          // dropdown with defaults from theme
-      [{ 'font': [] }],
-      [{ 'align': [] }],
-
-      ['link', 'image'],                                // link and image
-      ['clean']                                         // remove formatting button
-    ],
-    clipboard: {
-      // Sanitize pasted content
-      matchVisual: false,
-    }
-  }), []);
-
-  const formats = [
-    'header', 'font', 'size',
-    'bold', 'italic', 'underline', 'strike', 'blockquote',
-    'list', 'bullet', 'indent',
-    'link', 'image', 'color', 'background',
-    'script', 'code-block', 'direction', 'align'
-  ];
+  const editorRef = useRef<HTMLDivElement>(null);
+  const [isEditorFocused, setIsEditorFocused] = useState(false);
 
   // Handle content change with sanitization
-  const handleChange = useCallback((content: string) => {
+  const handleContentChange = useCallback(() => {
+    if (!editorRef.current) return;
+    
+    const content = editorRef.current.innerHTML;
+    
     if (!enableSanitization) {
       onChange(content);
       return;
@@ -91,6 +63,44 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
     }
   }, [enableSanitization, sanitizationLevel, onChange, onSanitizationReport]);
 
+  // Format text commands
+  const execCommand = (command: string, value?: string) => {
+    document.execCommand(command, false, value);
+    handleContentChange();
+    editorRef.current?.focus();
+  };
+
+  // Toolbar buttons
+  const ToolbarButton = ({ 
+    icon: Icon, 
+    command, 
+    value, 
+    title 
+  }: { 
+    icon: React.ComponentType<any>; 
+    command: string; 
+    value?: string; 
+    title: string; 
+  }) => (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      onClick={() => execCommand(command, value)}
+      title={title}
+      className="h-8 w-8 p-0"
+    >
+      <Icon className="h-4 w-4" />
+    </Button>
+  );
+
+  // Update editor content when value prop changes
+  useEffect(() => {
+    if (editorRef.current && editorRef.current.innerHTML !== value && !isEditorFocused) {
+      editorRef.current.innerHTML = value;
+    }
+  }, [value, isEditorFocused]);
+
   // Clear warning after 5 seconds
   useEffect(() => {
     if (sanitizationWarning) {
@@ -101,63 +111,97 @@ const ContentEditor: React.FC<ContentEditorProps> = ({
     }
   }, [sanitizationWarning]);
 
-  const getSanitizationIcon = () => {
-    if (sanitizationWarning) {
-      return <AlertTriangle className="h-4 w-4 text-orange-500" />;
-    }
-    return <CheckCircle className="h-4 w-4 text-green-500" />;
-  };
-
   return (
-    <div className={`w-full ${className}`}>
-      {/* Security Status Bar */}
-      {enableSanitization && (
-        <div className="flex items-center justify-between p-2 bg-gray-50 border border-gray-200 rounded-t-md">
-          <div className="flex items-center gap-2 text-sm">
-            <Shield className="h-4 w-4 text-blue-500" />
-            <span className="text-gray-600">
-              XSS Protection: <span className="font-medium capitalize">{sanitizationLevel}</span>
-            </span>
-            {getSanitizationIcon()}
-          </div>
+    <div className={`border rounded-lg overflow-hidden ${className}`}>
+      {/* Toolbar */}
+      <div className="border-b bg-gray-50 p-2 flex items-center space-x-1">
+        <ToolbarButton icon={Bold} command="bold" title="Bold" />
+        <ToolbarButton icon={Italic} command="italic" title="Italic" />
+        <ToolbarButton icon={Underline} command="underline" title="Underline" />
+        
+        <div className="w-px h-6 bg-gray-300 mx-2" />
+        
+        <ToolbarButton icon={List} command="insertUnorderedList" title="Bullet List" />
+        
+        <div className="w-px h-6 bg-gray-300 mx-2" />
+        
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => execCommand('formatBlock', 'h2')}
+          title="Heading 2"
+          className="h-8 px-2 text-sm"
+        >
+          H2
+        </Button>
+        
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => execCommand('formatBlock', 'h3')}
+          title="Heading 3"
+          className="h-8 px-2 text-sm"
+        >
+          H3
+        </Button>
 
-          {sanitizationWarning && (
-            <div className="flex items-center gap-2 text-sm text-orange-600">
-              <AlertTriangle className="h-4 w-4" />
-              <span>{sanitizationWarning}</span>
-            </div>
-          )}
+        <div className="w-px h-6 bg-gray-300 mx-2" />
+
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            const url = prompt('Enter URL:');
+            if (url) execCommand('createLink', url);
+          }}
+          title="Insert Link"
+          className="h-8 w-8 p-0"
+        >
+          <Link className="h-4 w-4" />
+        </Button>
+
+        {enableSanitization && (
+          <div className="ml-auto flex items-center">
+            <Shield className="h-4 w-4 text-green-600 mr-1" />
+            <span className="text-xs text-gray-600">
+              {sanitizationLevel.charAt(0).toUpperCase() + sanitizationLevel.slice(1)} Mode
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Sanitization Warning */}
+      {sanitizationWarning && (
+        <div className="bg-yellow-50 border-b border-yellow-200 p-2 flex items-center">
+          <AlertTriangle className="h-4 w-4 text-yellow-600 mr-2" />
+          <span className="text-sm text-yellow-800">{sanitizationWarning}</span>
         </div>
       )}
 
       {/* Editor */}
-      <ReactQuill
-        ref={quillRef}
-        theme="snow"
-        value={value}
-        onChange={handleChange}
-        modules={modules}
-        formats={formats}
-        placeholder={placeholder}
-        className={`h-96 mb-12 ${enableSanitization ? 'rounded-t-none' : ''}`}
-        style={{
-          borderTopLeftRadius: enableSanitization ? '0' : undefined,
-          borderTopRightRadius: enableSanitization ? '0' : undefined,
-        }}
+      <div
+        ref={editorRef}
+        contentEditable
+        suppressContentEditableWarning
+        className="min-h-[200px] p-4 focus:outline-none prose prose-sm max-w-none"
+        style={{ whiteSpace: 'pre-wrap' }}
+        onInput={handleContentChange}
+        onFocus={() => setIsEditorFocused(true)}
+        onBlur={() => setIsEditorFocused(false)}
+        data-placeholder={placeholder}
       />
 
-      {/* Security Info */}
-      {enableSanitization && (
-        <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
-          <div className="flex items-center gap-2">
-            <Shield className="h-3 w-3" />
-            <span>
-              Content is automatically sanitized to prevent XSS attacks.
-              Level: <strong>{sanitizationLevel}</strong>
-            </span>
-          </div>
-        </div>
-      )}
+      {/* Placeholder styling */}
+      <style jsx>{`
+        div[contenteditable]:empty:before {
+          content: attr(data-placeholder);
+          color: #9ca3af;
+          font-style: italic;
+        }
+      `}</style>
     </div>
   );
 };

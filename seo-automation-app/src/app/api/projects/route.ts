@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { createServiceLogger } from '@/lib/logging/logger';
 import { ProjectManagementService } from '@/lib/services/project-management.service';
 import { authenticateRequest } from '@/lib/auth/middleware';
+import { sanitizeText, sanitizeUrl, sanitizeArray } from '@/lib/validation/sanitizer';
 
 const logger = createServiceLogger('projects-api');
 
@@ -51,13 +52,17 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const queryParams = QueryParamsSchema.parse({
+    
+    // Sanitize query parameters
+    const rawParams = {
       organization: searchParams.get('organization') || 'client-campaign',
-      client: searchParams.get('client') || undefined,
-      campaign: searchParams.get('campaign') || undefined,
-      category: searchParams.get('category') || undefined,
+      client: searchParams.get('client') ? sanitizeText(searchParams.get('client')!, { maxLength: 100 }) : undefined,
+      campaign: searchParams.get('campaign') ? sanitizeText(searchParams.get('campaign')!, { maxLength: 100 }) : undefined,
+      category: searchParams.get('category') ? sanitizeText(searchParams.get('category')!, { maxLength: 50 }) : undefined,
       status: searchParams.get('status') || undefined,
-    });
+    };
+    
+    const queryParams = QueryParamsSchema.parse(rawParams);
 
     let projects;
     
@@ -111,7 +116,20 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const projectData = CreateProjectSchema.parse(body);
+    
+    // Sanitize project data
+    const sanitizedBody = {
+      ...body,
+      name: sanitizeText(body.name, { maxLength: 100 }),
+      description: body.description ? sanitizeText(body.description, { maxLength: 500 }) : undefined,
+      client_name: sanitizeText(body.client_name, { maxLength: 100 }),
+      campaign_name: sanitizeText(body.campaign_name, { maxLength: 100 }),
+      category: sanitizeText(body.category, { maxLength: 50 }),
+      target_keywords: body.target_keywords ? sanitizeArray(body.target_keywords, { maxLength: 100 }) : [],
+      domain_url: body.domain_url ? sanitizeUrl(body.domain_url) : undefined,
+    };
+    
+    const projectData = CreateProjectSchema.parse(sanitizedBody);
 
     const project = await projectService.createProject(authResult.user.id, projectData);
 
@@ -170,7 +188,16 @@ export async function PUT(request: NextRequest) {
       }),
     });
 
-    const { project_ids, updates } = BulkUpdateSchema.parse(body);
+    // Sanitize bulk update data
+    const sanitizedBody = {
+      ...body,
+      updates: {
+        ...body.updates,
+        category: body.updates?.category ? sanitizeText(body.updates.category, { maxLength: 50 }) : undefined,
+      }
+    };
+
+    const { project_ids, updates } = BulkUpdateSchema.parse(sanitizedBody);
 
     const updatedProjects = [];
     for (const projectId of project_ids) {

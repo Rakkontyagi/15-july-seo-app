@@ -613,12 +613,14 @@ export class TextAnalyzer {
   }
 
   private hasIntroduction(text: string): boolean {
-    const firstParagraph = text.split('\n\n')[0];
+    const paragraphs = text.split('\n\n');
+    const firstParagraph = paragraphs.length > 0 ? paragraphs[0] : '';
     return firstParagraph && firstParagraph.length > 100;
   }
 
   private hasConclusion(text: string): boolean {
-    const lastParagraph = text.split('\n\n').pop();
+    const paragraphs = text.split('\n\n');
+    const lastParagraph = paragraphs.length > 0 ? paragraphs[paragraphs.length - 1] : '';
     return lastParagraph && lastParagraph.length > 50 && 
            /\b(conclusion|summary|finally|in summary|to conclude)\b/i.test(lastParagraph);
   }
@@ -645,8 +647,6 @@ export class TextAnalyzer {
       'when', 'where', 'who', 'why', 'work', 'year', 'years'
     ];
   }
-}
-
 }
 
 // Factory function

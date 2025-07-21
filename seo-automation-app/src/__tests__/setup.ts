@@ -5,6 +5,7 @@
 
 import '@testing-library/jest-dom';
 import 'jest-extended';
+import React from 'react';
 import { configure } from '@testing-library/react';
 import { server } from './mocks/server';
 import { TextEncoder, TextDecoder } from 'util';
@@ -168,7 +169,7 @@ jest.mock('next/image', () => ({
   __esModule: true,
   default: (props: any) => {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img {...props} />;
+    return React.createElement('img', props);
   },
 }));
 
@@ -176,7 +177,7 @@ jest.mock('next/image', () => ({
 jest.mock('next/link', () => ({
   __esModule: true,
   default: ({ children, ...props }: any) => {
-    return <a {...props}>{children}</a>;
+    return React.createElement('a', props, children);
   },
 }));
 

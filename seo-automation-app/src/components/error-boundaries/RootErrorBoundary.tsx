@@ -12,6 +12,7 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home, Bug } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { createComponentLogger } from '@/lib/logging/logger';
 
 interface Props {
   children: ReactNode;
@@ -29,6 +30,7 @@ interface State {
 export class RootErrorBoundary extends Component<Props, State> {
   private retryCount = 0;
   private maxRetries = 3;
+  private logger = createComponentLogger('RootErrorBoundary');
 
   constructor(props: Props) {
     super(props);
@@ -89,16 +91,20 @@ export class RootErrorBoundary extends Component<Props, State> {
         });
       }
 
-      // Log to console in development
-      if (process.env.NODE_ENV === 'development') {
-        console.group('🚨 Root Error Boundary Caught Error');
-        console.error('Error:', error);
-        console.error('Error Info:', errorInfo);
-        console.error('Component Stack:', errorInfo.componentStack);
-        console.groupEnd();
-      }
+      // Log error with centralized logger
+      this.logger.error('Root Error Boundary caught error', {
+        error: error.message,
+        stack: error.stack,
+        componentStack: errorInfo.componentStack,
+        errorId: this.state.errorId,
+        retryCount: this.retryCount,
+        isDevelopment: process.env.NODE_ENV === 'development'
+      });
     } catch (reportingError) {
-      console.error('Failed to report error:', reportingError);
+      this.logger.error('Failed to report error to external services', {
+        reportingError: reportingError instanceof Error ? reportingError.message : reportingError,
+        originalError: error.message
+      });
     }
   };
 
@@ -270,6 +276,8 @@ export function withErrorBoundary<P extends object>(
 
 // Hook for error reporting from components
 export function useErrorReporting() {
+  const logger = createComponentLogger('useErrorReporting');
+  
   const reportError = React.useCallback((error: Error, context?: Record<string, any>) => {
     try {
       if (typeof window !== 'undefined' && window.Sentry) {
@@ -281,11 +289,18 @@ export function useErrorReporting() {
         });
       }
 
-      console.error('Manual error report:', error, context);
+      logger.error('Manual error report from component', {
+        error: error.message,
+        stack: error.stack,
+        context
+      });
     } catch (reportingError) {
-      console.error('Failed to report error:', reportingError);
+      logger.error('Failed to report error', {
+        reportingError: reportingError instanceof Error ? reportingError.message : reportingError,
+        originalError: error.message
+      });
     }
-  }, []);
+  }, [logger]);
 
   return { reportError };
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createComponentLogger } from '@/lib/logging/logger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -153,7 +154,8 @@ export function RealTimeContentEditor({
         setSuggestions(basicSuggestions);
       }
     } catch (error) {
-      console.error('Analysis error:', error);
+      const logger = createComponentLogger('RealTimeContentEditor');
+      logger.error('Real-time content analysis error', { error: error instanceof Error ? error.message : error });
     } finally {
       setIsAnalyzing(false);
     }

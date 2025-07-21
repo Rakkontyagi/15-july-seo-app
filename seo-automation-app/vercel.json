@@ -42,9 +42,9 @@
       "maxDuration": 10
     }
   },
-  "regions": ["iad1"],
+  "regions": ["iad1", "sfo1"],
   "buildCommand": "npm run build",
-  "installCommand": "npm ci",
+  "installCommand": "npm install --legacy-peer-deps",
   "framework": "nextjs",
   "crons": [
     {
@@ -87,7 +87,7 @@
       "headers": [
         {
           "key": "Access-Control-Allow-Origin",
-          "value": "https://yourdomain.com"
+          "value": "*"
         },
         {
           "key": "Access-Control-Allow-Methods",

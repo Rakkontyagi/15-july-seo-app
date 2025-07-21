@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom';
+import React from 'react';
 
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
@@ -165,22 +166,10 @@ jest.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
-// Mock react-quill
-jest.mock('react-quill', () => {
-  return {
-    __esModule: true,
-    default: function MockReactQuill({ value, onChange, placeholder }: any) {
-      return React.createElement('div', {
-        'data-testid': 'react-quill-mock',
-        children: React.createElement('textarea', {
-          'data-testid': 'quill-editor',
-          value: value,
-          onChange: (e: any) => onChange(e.target.value),
-          placeholder: placeholder,
-        }),
-      });
-    },
-  };
+// Mock document.execCommand for contentEditable tests
+Object.defineProperty(document, 'execCommand', {
+  value: jest.fn(() => true),
+  writable: true,
 });
 
 // Global test utilities

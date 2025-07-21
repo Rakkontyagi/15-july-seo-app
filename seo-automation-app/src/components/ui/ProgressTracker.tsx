@@ -77,7 +77,7 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
               )}
               {(step.estimatedTime !== undefined || step.completedTime !== undefined) && (
                 <p className="text-xs text-gray-500">
-                  {step.status === 'completed' ? 'Completed in' : 'Estimated':} {formatTime(step.completedTime || step.estimatedTime)}
+                  {step.status === 'completed' ? 'Completed in' : 'Estimated'}: {formatTime(step.completedTime || step.estimatedTime)}
                 </p>
               )}
             </div>

@@ -1,6 +1,5 @@
 const nextJest = require('next/jest')
 
-/** @type {import('jest').Config} */
 const createJestConfig = nextJest({
   // Provide the path to your Next.js app to load next.config.js and .env files
   dir: './',
@@ -10,7 +9,7 @@ const createJestConfig = nextJest({
 const config = {
   coverageProvider: 'v8',
   testEnvironment: 'jsdom',
-  setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js', '<rootDir>/src/setupTests.ts'],
   moduleDirectories: ['node_modules', '<rootDir>/'],
   testPathIgnorePatterns: ['<rootDir>/.next/', '<rootDir>/node_modules/', '<rootDir>/e2e/'],
   moduleNameMapper: {
@@ -89,18 +88,12 @@ const config = {
   clearMocks: true,
   resetMocks: true,
   restoreMocks: true,
-  transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }],
-  },
+  // Transform configuration optimized for Next.js
   transformIgnorePatterns: [
-    'node_modules/(?!(.*\\.mjs$))',
+    '/node_modules/',
+    '^.+\\.module\\.(css|sass|scss)$',
   ],
   watchPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/.next/'],
-  globals: {
-    'ts-jest': {
-      tsconfig: 'tsconfig.json',
-    },
-  },
 }
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async

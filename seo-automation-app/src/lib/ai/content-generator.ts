@@ -57,6 +57,12 @@ export interface ContentGenerationOptions {
   potentialSubtopics?: string[]; // Potential subtopics for topical cluster completion
   sensitiveTopics?: string[]; // Sensitive topics for expert review
   contentId?: string; // Optional ID for content versioning
+  currentInformation?: {
+    facts2025: string[];
+    recentDevelopments: string[];
+    industryTrends: string[];
+    relevantEvents: string[];
+  }; // Real-time 2025 facts and current information
 }
 
 export class AIContentGenerator {
@@ -107,9 +113,61 @@ export class AIContentGenerator {
     return `You are an AI content generation expert with 20+ years of experience in SEO and content marketing. Your goal is to produce highly authoritative, human-like, and SEO-optimized content that ranks as the best answer across all search engines. Focus on E-E-A-T principles: Experience, Expertise, Authoritativeness, and Trustworthiness. Incorporate the latest facts and studies relevant to 2025.`;
   }
 
+  private formatCurrentInfoForPrompt(currentInfo: any): string {
+    let formatted = '\n\n=== CURRENT 2025 INFORMATION ===\n';
+    
+    if (currentInfo.facts2025 && currentInfo.facts2025.length > 0) {
+      formatted += '\n2025 FACTS:\n';
+      currentInfo.facts2025.forEach((fact: string, index: number) => {
+        formatted += `${index + 1}. ${fact}\n`;
+      });
+    }
+    
+    if (currentInfo.recentDevelopments && currentInfo.recentDevelopments.length > 0) {
+      formatted += '\nRECENT DEVELOPMENTS:\n';
+      currentInfo.recentDevelopments.forEach((dev: string, index: number) => {
+        formatted += `${index + 1}. ${dev}\n`;
+      });
+    }
+    
+    if (currentInfo.industryTrends && currentInfo.industryTrends.length > 0) {
+      formatted += '\nINDUSTRY TRENDS:\n';
+      currentInfo.industryTrends.forEach((trend: string, index: number) => {
+        formatted += `${index + 1}. ${trend}\n`;
+      });
+    }
+    
+    if (currentInfo.relevantEvents && currentInfo.relevantEvents.length > 0) {
+      formatted += '\nRELEVANT EVENTS:\n';
+      currentInfo.relevantEvents.forEach((event: string, index: number) => {
+        formatted += `${index + 1}. ${event}\n`;
+      });
+    }
+    
+    formatted += '\n=== END CURRENT INFORMATION ===\n\n';
+    formatted += 'IMPORTANT: Integrate these real-time facts naturally into your content to ensure accuracy and currency for 2025.\n';
+    
+    return formatted;
+  }
+
   async generate(options: ContentGenerationOptions): Promise<GeneratedContent> {
-    const currentInfo = await this.currentInformationIntegrator.fetchCurrentInformation(options.keyword, options.industry);
-    const formattedCurrentInfo = this.currentInformationIntegrator.formatForPrompt(currentInfo);
+    // Use provided current information or fetch fresh data
+    let currentInfo;
+    let formattedCurrentInfo = '';
+    
+    if (options.currentInformation) {
+      // Use provided current information
+      currentInfo = {
+        ...options.currentInformation,
+        lastUpdated: new Date(),
+        sources: ['Real-time API integration']
+      };
+      formattedCurrentInfo = this.formatCurrentInfoForPrompt(currentInfo);
+    } else {
+      // Fetch fresh current information
+      currentInfo = await this.currentInformationIntegrator.fetchCurrentInformation(options.keyword, options.industry);
+      formattedCurrentInfo = this.currentInformationIntegrator.formatForPrompt(currentInfo);
+    }
 
     const userPrompt = fillExpertContentPrompt({
       ...options,

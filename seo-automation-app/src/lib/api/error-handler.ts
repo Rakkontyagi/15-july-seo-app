@@ -284,7 +284,8 @@ class ApiErrorHandler {
       if (hostname.includes('stripe.com')) return 'stripe';
       
       // Extract first part of domain
-      return hostname.split('.')[0] || 'unknown';
+      const parts = hostname.split('.');
+      return parts.length > 0 ? parts[0] : 'unknown';
     } catch {
       return 'unknown';
     }

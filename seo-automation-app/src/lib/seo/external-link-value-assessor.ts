@@ -44,7 +44,7 @@ export class ExternalLinkValueAssessor {
       topicalRelevance = 80;
     } else {
       topicalRelevance = 40;
-      recommendations.push('Ensure the external link's content is highly relevant to your main topic.');
+      recommendations.push('Ensure the external link content is highly relevant to your main topic.');
     }
 
     // 3. Source Credibility (from input)

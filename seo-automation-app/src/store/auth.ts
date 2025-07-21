@@ -10,6 +10,7 @@ import {
   type SignInData,
   type SignUpData 
 } from '@/lib/supabase/auth';
+import { createComponentLogger } from '@/lib/logging/logger';
 
 interface AuthState {
   user: User | null;
@@ -107,7 +108,8 @@ export const useAuthStore = create<AuthStore>()(
           
           set({ user, loading: false, initialized: true });
         } catch (error) {
-          console.error('Auth initialization failed:', error);
+          const logger = createComponentLogger('auth');
+      logger.error('Auth initialization failed:', { error: error instanceof Error ? error.message : error });
           set({ loading: false, initialized: true });
         }
       },

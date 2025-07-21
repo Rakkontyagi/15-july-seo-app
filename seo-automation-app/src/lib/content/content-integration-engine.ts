@@ -117,7 +117,7 @@ export class ContentIntegrationEngine {
     headings.forEach((match, index) => {
       if (optimizedCount >= targetOptimizations) return;
 
-      const level = match[1].length;
+      const level = match[1] ? match[1].length : 1;
       const originalText = match[2];
       const fullMatch = match[0];
 

@@ -4,10 +4,60 @@ import type { NextRequest } from 'next/server'
 import { STATIC_ASSET_CACHE_HEADERS, API_CACHE_HEADERS, NO_CACHE_HEADERS } from '@/lib/cache/edge-cache'
 import { checkRateLimit, getClientIP } from '@/lib/auth/rate-limiter'
 
+// CORS configuration
+const ALLOWED_ORIGINS = [
+  'http://localhost:3000',
+  'http://localhost:3001', 
+  'https://your-production-domain.com', // Replace with actual production domain
+  process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+].filter(Boolean)
+
+const CORS_HEADERS = {
+  'Access-Control-Allow-Credentials': 'true',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, X-File-Name',
+  'Access-Control-Max-Age': '86400', // 24 hours
+}
+
 export async function middleware(req: NextRequest) {
+  const origin = req.headers.get('origin')
+  const isApiRoute = req.nextUrl.pathname.startsWith('/api/')
+  
+  // Handle CORS for API routes
+  if (isApiRoute) {
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+      const corsResponse = new NextResponse(null, { status: 200 })
+      
+      // Set CORS headers for preflight
+      if (origin && ALLOWED_ORIGINS.includes(origin)) {
+        corsResponse.headers.set('Access-Control-Allow-Origin', origin)
+      }
+      
+      Object.entries(CORS_HEADERS).forEach(([key, value]) => {
+        corsResponse.headers.set(key, value)
+      })
+      
+      return corsResponse
+    }
+  }
+
   const response = NextResponse.next({
     request: req,
   })
+
+  // Add CORS headers for API routes
+  if (isApiRoute && origin) {
+    if (ALLOWED_ORIGINS.includes(origin)) {
+      response.headers.set('Access-Control-Allow-Origin', origin)
+      Object.entries(CORS_HEADERS).forEach(([key, value]) => {
+        response.headers.set(key, value)
+      })
+    } else {
+      // Block requests from non-allowed origins
+      return new NextResponse('Forbidden', { status: 403 })
+    }
+  }
 
   // Add security headers
   response.headers.set('X-Frame-Options', 'DENY')
@@ -146,11 +196,11 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
      * - _next/static (static files)
-     * - _next/image (image optimization files)
+     * - _next/image (image optimization files)  
      * - favicon.ico (favicon file)
+     * Note: Now includes API routes for CORS handling
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 }

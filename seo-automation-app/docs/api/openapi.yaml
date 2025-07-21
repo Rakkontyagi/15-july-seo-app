@@ -1,0 +1,815 @@
+openapi: 3.0.3
+info:
+  title: SEO Automation App API
+  description: |
+    Comprehensive API documentation for the SEO Automation App.
+    
+    ## Overview
+    This API provides endpoints for SEO content generation, analysis, and optimization.
+    All endpoints require authentication unless otherwise specified.
+    
+    ## Authentication
+    The API uses JWT-based authentication. Include the token in the Authorization header:
+    ```
+    Authorization: Bearer <your-jwt-token>
+    ```
+    
+    ## Rate Limiting
+    - General endpoints: 100 requests per minute
+    - AI generation endpoints: 10 requests per minute
+    - Analysis endpoints: 50 requests per minute
+    
+  version: 1.0.0
+  contact:
+    name: SEO Automation Support
+    email: support@seo-automation.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://seo-automation-app.vercel.app/api
+    description: Production server
+  - url: http://localhost:3000/api
+    description: Development server
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Authentication
+    description: User authentication and authorization
+  - name: Content Generation
+    description: AI-powered content generation
+  - name: SEO Analysis
+    description: SEO and competitor analysis
+  - name: Content Management
+    description: Content library and management
+  - name: Intelligence
+    description: Advanced AI intelligence features
+  - name: Health
+    description: System health and monitoring
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - fullName
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  example: SecurePass123!
+                fullName:
+                  type: string
+                  example: John Doe
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /content/generate:
+    post:
+      tags:
+        - Content Generation
+      summary: Generate SEO-optimized content
+      description: |
+        Generates AI-powered content with advanced SEO optimization.
+        Includes competitor analysis, keyword integration, and E-E-A-T principles.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContentGenerationRequest'
+      responses:
+        '200':
+          description: Content generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentGenerationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+  /content/integrate:
+    post:
+      tags:
+        - Content Generation
+      summary: Integrate keywords and entities into content
+      description: |
+        Precision keyword integration using competitor data averaging.
+        Implements Story 3.3 with exact density matching.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContentIntegrationRequest'
+      responses:
+        '200':
+          description: Content integrated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentIntegrationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /serp/analyze:
+    post:
+      tags:
+        - SEO Analysis
+      summary: Analyze SERP for keywords
+      description: |
+        Performs comprehensive SERP analysis including:
+        - Top 10 organic results
+        - Featured snippets
+        - People Also Ask
+        - Related searches
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - keyword
+                - location
+              properties:
+                keyword:
+                  type: string
+                  example: "SEO best practices"
+                location:
+                  type: string
+                  example: "United States"
+                numResults:
+                  type: integer
+                  default: 10
+                  minimum: 1
+                  maximum: 100
+      responses:
+        '200':
+          description: SERP analysis complete
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SERPAnalysisResponse'
+
+  /seo/analyze:
+    post:
+      tags:
+        - SEO Analysis
+      summary: Analyze content for SEO
+      description: |
+        Comprehensive SEO analysis including:
+        - Keyword density
+        - Readability scores
+        - Technical SEO factors
+        - Content quality metrics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+                - targetKeywords
+              properties:
+                content:
+                  type: string
+                  minLength: 100
+                targetKeywords:
+                  type: array
+                  items:
+                    type: string
+                  example: ["SEO", "optimization", "content marketing"]
+      responses:
+        '200':
+          description: SEO analysis complete
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SEOAnalysisResponse'
+
+  /intelligence/analyze:
+    post:
+      tags:
+        - Intelligence
+      summary: Advanced AI intelligence analysis
+      description: |
+        Performs deep content intelligence analysis:
+        - Competitor gap analysis
+        - Content opportunity identification
+        - Strategic recommendations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - keyword
+                - competitors
+              properties:
+                keyword:
+                  type: string
+                competitors:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+                  maxItems: 10
+      responses:
+        '200':
+          description: Intelligence analysis complete
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntelligenceResponse'
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check endpoint
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy]
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                    example: "1.0.0"
+                  services:
+                    type: object
+                    properties:
+                      database:
+                        type: boolean
+                      redis:
+                        type: boolean
+                      openai:
+                        type: boolean
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        token:
+          type: string
+          description: JWT access token
+        refreshToken:
+          type: string
+          description: JWT refresh token
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        fullName:
+          type: string
+        role:
+          type: string
+          enum: [user, admin]
+        createdAt:
+          type: string
+          format: date-time
+
+    ContentGenerationRequest:
+      type: object
+      required:
+        - keyword
+        - industry
+        - targetAudience
+        - wordCount
+      properties:
+        keyword:
+          type: string
+          maxLength: 100
+          example: "SEO content optimization"
+        industry:
+          type: string
+          maxLength: 50
+          example: "Digital Marketing"
+        targetAudience:
+          type: string
+          maxLength: 50
+          example: "Marketing professionals"
+        tone:
+          type: string
+          enum: [authoritative, conversational, academic, practical, thought-provoking]
+          default: authoritative
+        wordCount:
+          type: integer
+          minimum: 300
+          maximum: 10000
+          default: 1500
+        competitorInsights:
+          type: string
+          description: Competitor analysis data
+        targetKeywordDensity:
+          type: number
+          minimum: 0
+          maximum: 5
+          example: 2.5
+        lsiKeywords:
+          type: array
+          items:
+            type: string
+          example: ["search engine", "content marketing", "keyword research"]
+        entities:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              type:
+                type: string
+                enum: [PERSON, ORGANIZATION, LOCATION, PRODUCT, EVENT]
+
+    ContentGenerationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            content:
+              type: string
+              description: Generated content in markdown format
+            wordCount:
+              type: integer
+            qualityAnalysis:
+              type: object
+              properties:
+                overallScore:
+                  type: number
+                  minimum: 0
+                  maximum: 100
+                readabilityScore:
+                  type: number
+                grammarScore:
+                  type: number
+                seoScore:
+                  type: number
+            humanWritingAnalysis:
+              type: object
+              properties:
+                humanScore:
+                  type: number
+                  minimum: 0
+                  maximum: 100
+                patterns:
+                  type: array
+                  items:
+                    type: string
+            eeatOptimization:
+              type: object
+              properties:
+                experience:
+                  type: number
+                expertise:
+                  type: number
+                authoritativeness:
+                  type: number
+                trustworthiness:
+                  type: number
+        metadata:
+          type: object
+          properties:
+            processingTime:
+              type: integer
+              description: Processing time in milliseconds
+            model:
+              type: string
+              example: "gpt-4o"
+            version:
+              type: string
+
+    ContentIntegrationRequest:
+      type: object
+      required:
+        - content
+        - primaryKeyword
+        - lsiKeywords
+        - entities
+        - competitorData
+      properties:
+        content:
+          type: string
+          minLength: 100
+        primaryKeyword:
+          type: string
+        lsiKeywords:
+          type: array
+          items:
+            type: string
+          minItems: 1
+        entities:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              type:
+                type: string
+              relevance:
+                type: number
+                minimum: 0
+                maximum: 1
+        competitorData:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompetitorData'
+          minItems: 5
+          maxItems: 5
+
+    ContentIntegrationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            integratedContent:
+              type: object
+              properties:
+                content:
+                  type: string
+                keywordDensityAchieved:
+                  type: number
+                headingOptimizationCount:
+                  type: integer
+                naturalFlowScore:
+                  type: number
+            benchmarks:
+              type: object
+              properties:
+                wordCount:
+                  type: integer
+                keywordDensity:
+                  type: number
+                headingOptimization:
+                  type: integer
+            densityAnalysis:
+              type: object
+              properties:
+                primaryKeyword:
+                  type: object
+                averagePrecision:
+                  type: number
+                competitorAlignment:
+                  type: number
+
+    CompetitorData:
+      type: object
+      required:
+        - url
+        - wordCount
+        - keywordDensity
+        - headingOptimization
+      properties:
+        url:
+          type: string
+          format: uri
+        wordCount:
+          type: integer
+          minimum: 0
+        keywordDensity:
+          type: number
+          minimum: 0
+          maximum: 10
+        headingOptimization:
+          type: integer
+          minimum: 0
+        lsiKeywordCount:
+          type: integer
+        entityCount:
+          type: integer
+        readabilityScore:
+          type: number
+        contentQuality:
+          type: number
+
+    SERPAnalysisResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            keyword:
+              type: string
+            location:
+              type: string
+            searchVolume:
+              type: integer
+            difficulty:
+              type: number
+            organicResults:
+              type: array
+              items:
+                type: object
+                properties:
+                  position:
+                    type: integer
+                  title:
+                    type: string
+                  url:
+                    type: string
+                  snippet:
+                    type: string
+                  domain:
+                    type: string
+            featuredSnippet:
+              type: object
+              nullable: true
+            peopleAlsoAsk:
+              type: array
+              items:
+                type: string
+            relatedSearches:
+              type: array
+              items:
+                type: string
+
+    SEOAnalysisResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            overallScore:
+              type: number
+              minimum: 0
+              maximum: 100
+            keywordAnalysis:
+              type: object
+              properties:
+                density:
+                  type: object
+                  additionalProperties:
+                    type: number
+                usage:
+                  type: object
+                  additionalProperties:
+                    type: integer
+            readability:
+              type: object
+              properties:
+                fleschKincaid:
+                  type: number
+                fleschReadingEase:
+                  type: number
+                gunningFog:
+                  type: number
+            technicalSEO:
+              type: object
+              properties:
+                headingStructure:
+                  type: object
+                internalLinks:
+                  type: integer
+                externalLinks:
+                  type: integer
+                images:
+                  type: integer
+            recommendations:
+              type: array
+              items:
+                type: string
+
+    IntelligenceResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            gapAnalysis:
+              type: object
+              properties:
+                missingTopics:
+                  type: array
+                  items:
+                    type: string
+                contentOpportunities:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      topic:
+                        type: string
+                      searchVolume:
+                        type: integer
+                      difficulty:
+                        type: number
+            competitorInsights:
+              type: array
+              items:
+                type: object
+                properties:
+                  competitor:
+                    type: string
+                  strengths:
+                    type: array
+                    items:
+                      type: string
+                  weaknesses:
+                    type: array
+                    items:
+                      type: string
+            strategicRecommendations:
+              type: array
+              items:
+                type: object
+                properties:
+                  priority:
+                    type: string
+                    enum: [high, medium, low]
+                  recommendation:
+                    type: string
+                  expectedImpact:
+                    type: string
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+        timestamp:
+          type: string
+          format: date-time
+
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Validation Error"
+            message: "Invalid request parameters"
+            details:
+              keyword: "Keyword is required"
+
+    Unauthorized:
+      description: Unauthorized - authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Unauthorized"
+            message: "Authentication required"
+
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Forbidden"
+            message: "Insufficient permissions"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Not Found"
+            message: "Resource not found"
+
+    Conflict:
+      description: Conflict - resource already exists
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Conflict"
+            message: "User with this email already exists"
+
+    RateLimitExceeded:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Rate Limit Exceeded"
+            message: "Too many requests. Please try again later."
+            details:
+              retryAfter: 60
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Internal Server Error"
+            message: "An unexpected error occurred"

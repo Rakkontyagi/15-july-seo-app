@@ -1,7 +1,12 @@
 /**
- * Simple logger utility for the application
+ * Simple logger utility for the application - DEPRECATED
+ * Use /lib/logging/logger.ts instead for production-grade logging
  */
 
+// Re-export the proper logger from the main logging module
+export { logger, LogLevel, createServiceLogger, createComponentLogger } from '../logging/logger';
+
+// Keep the old interface for backward compatibility
 export interface LogContext {
   [key: string]: any;
 }
@@ -12,32 +17,3 @@ export interface Logger {
   error(message: string, context?: LogContext): void;
   debug(message: string, context?: LogContext): void;
 }
-
-class ConsoleLogger implements Logger {
-  private formatMessage(level: string, message: string, context?: LogContext): string {
-    const timestamp = new Date().toISOString();
-    const contextStr = context ? ` ${JSON.stringify(context)}` : '';
-    return `[${timestamp}] ${level.toUpperCase()}: ${message}${contextStr}`;
-  }
-
-  info(message: string, context?: LogContext): void {
-    console.log(this.formatMessage('info', message, context));
-  }
-
-  warn(message: string, context?: LogContext): void {
-    console.warn(this.formatMessage('warn', message, context));
-  }
-
-  error(message: string, context?: LogContext): void {
-    console.error(this.formatMessage('error', message, context));
-  }
-
-  debug(message: string, context?: LogContext): void {
-    if (process.env.NODE_ENV === 'development') {
-      console.debug(this.formatMessage('debug', message, context));
-    }
-  }
-}
-
-// Export singleton logger instance
-export const logger: Logger = new ConsoleLogger();

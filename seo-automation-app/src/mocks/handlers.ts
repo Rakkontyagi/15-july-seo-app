@@ -26,7 +26,7 @@ export const openaiHandlers = [
     await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
     
     // Generate realistic response based on request
-    const lastMessage = messages[messages.length - 1];
+    const lastMessage = messages && messages.length > 0 ? messages[messages.length - 1] : null;
     const isContentGeneration = lastMessage?.content?.includes('content') || 
                                lastMessage?.content?.includes('article') ||
                                lastMessage?.content?.includes('blog');

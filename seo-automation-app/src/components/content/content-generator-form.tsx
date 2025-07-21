@@ -31,6 +31,7 @@ import {
   Share,
   Edit
 } from 'lucide-react';
+import { createComponentLogger } from '@/lib/logging/logger';
 
 interface ContentGeneratorFormProps {
   onGenerate?: (data: ContentFormData) => void;
@@ -193,7 +194,8 @@ In conclusion, ${data.keyword} is an important topic that requires careful consi
       setActiveTab('result');
       onGenerate?.(data);
     } catch (error) {
-      console.error('Generation failed:', error);
+      const logger = createComponentLogger('content-generator-form');
+      logger.error('Generation failed:', { error: error instanceof Error ? error.message : error });
     } finally {
       setIsGenerating(false);
     }

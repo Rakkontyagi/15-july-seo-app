@@ -7,6 +7,9 @@ import { AIContentGenerator, ContentGenerationOptions } from '@/lib/ai/content-g
 import { authenticateRequest } from '@/lib/auth/middleware';
 import { withRateLimit } from '@/lib/middleware/rate-limit';
 import { withErrorHandler } from '@/lib/middleware/error-handler';
+import { sanitizeText, sanitizeArray } from '@/lib/validation/sanitizer';
+import { withCors } from '@/lib/middleware/cors';
+import { CurrentInformationIntegrator } from '@/lib/ai/current-information-integrator';
 
 const logger = createServiceLogger('content-generation-api');
 
@@ -49,7 +52,8 @@ const generateContentSchema = z.object({
   sensitiveTopics: z.array(z.string()).optional()
 });
 
-export async function POST(request: NextRequest) {
+// Internal POST handler
+async function handlePOST(request: NextRequest) {
   const startTime = Date.now();
   
   try {
@@ -67,34 +71,82 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = generateContentSchema.parse(body);
 
+    // Sanitize all string inputs to prevent SQL injection and XSS
+    const sanitizedData = {
+      ...validatedData,
+      keyword: sanitizeText(validatedData.keyword, { maxLength: 100 }),
+      industry: sanitizeText(validatedData.industry, { maxLength: 50 }),
+      targetAudience: sanitizeText(validatedData.targetAudience, { maxLength: 50 }),
+      competitorInsights: validatedData.competitorInsights ? sanitizeText(validatedData.competitorInsights, { maxLength: 5000 }) : undefined,
+      lsiKeywords: validatedData.lsiKeywords ? sanitizeArray(validatedData.lsiKeywords, { maxLength: 100 }) : undefined,
+      entities: validatedData.entities ? validatedData.entities.map(entity => ({
+        name: sanitizeText(entity.name, { maxLength: 100 }),
+        type: sanitizeText(entity.type, { maxLength: 50 })
+      })) : undefined,
+      keywordVariations: validatedData.keywordVariations ? sanitizeArray(validatedData.keywordVariations, { maxLength: 100 }) : undefined,
+      relatedKeywords: validatedData.relatedKeywords ? sanitizeArray(validatedData.relatedKeywords, { maxLength: 100 }) : undefined,
+      comparisonCorpus: validatedData.comparisonCorpus ? sanitizeArray(validatedData.comparisonCorpus, { maxLength: 1000 }) : undefined,
+      potentialSubtopics: validatedData.potentialSubtopics ? sanitizeArray(validatedData.potentialSubtopics, { maxLength: 200 }) : undefined,
+      contentId: validatedData.contentId ? sanitizeText(validatedData.contentId, { maxLength: 50 }) : undefined,
+      sensitiveTopics: validatedData.sensitiveTopics ? sanitizeArray(validatedData.sensitiveTopics, { maxLength: 100 }) : undefined
+    };
+
     logger.info('Content generation request received', {
       userId: authResult.user.id,
-      keyword: validatedData.keyword,
-      industry: validatedData.industry,
-      wordCount: validatedData.wordCount
+      keyword: sanitizedData.keyword,
+      industry: sanitizedData.industry,
+      wordCount: sanitizedData.wordCount
     });
 
     // Initialize AI content generator
     const contentGenerator = new AIContentGenerator();
+    const currentInfoIntegrator = new CurrentInformationIntegrator();
+
+    // Fetch real-time 2025 facts and current information
+    logger.info('Fetching current information for content generation', {
+      keyword: sanitizedData.keyword,
+      industry: sanitizedData.industry
+    });
+
+    let currentInformation;
+    try {
+      currentInformation = await currentInfoIntegrator.fetchCurrentInformation(
+        sanitizedData.keyword,
+        sanitizedData.industry
+      );
+      logger.info('Current information fetched successfully', {
+        factsCount: currentInformation.facts2025.length,
+        trendsCount: currentInformation.industryTrends.length
+      });
+    } catch (error) {
+      logger.warn('Failed to fetch current information, proceeding without real-time data', { error });
+      currentInformation = null;
+    }
 
     // Prepare generation options
     const options: ContentGenerationOptions = {
-      keyword: validatedData.keyword,
-      industry: validatedData.industry,
-      targetAudience: validatedData.targetAudience,
-      tone: validatedData.tone,
-      wordCount: validatedData.wordCount,
-      competitorInsights: validatedData.competitorInsights,
-      targetKeywordDensity: validatedData.targetKeywordDensity,
-      lsiKeywords: validatedData.lsiKeywords,
-      entities: validatedData.entities,
-      targetOptimizedHeadingsCount: validatedData.targetOptimizedHeadingsCount,
-      keywordVariations: validatedData.keywordVariations,
-      relatedKeywords: validatedData.relatedKeywords,
-      comparisonCorpus: validatedData.comparisonCorpus,
-      potentialSubtopics: validatedData.potentialSubtopics,
-      contentId: validatedData.contentId,
-      sensitiveTopics: validatedData.sensitiveTopics
+      keyword: sanitizedData.keyword,
+      industry: sanitizedData.industry,
+      targetAudience: sanitizedData.targetAudience,
+      tone: sanitizedData.tone,
+      wordCount: sanitizedData.wordCount,
+      competitorInsights: sanitizedData.competitorInsights,
+      targetKeywordDensity: sanitizedData.targetKeywordDensity,
+      lsiKeywords: sanitizedData.lsiKeywords,
+      entities: sanitizedData.entities,
+      targetOptimizedHeadingsCount: sanitizedData.targetOptimizedHeadingsCount,
+      keywordVariations: sanitizedData.keywordVariations,
+      relatedKeywords: sanitizedData.relatedKeywords,
+      comparisonCorpus: sanitizedData.comparisonCorpus,
+      potentialSubtopics: sanitizedData.potentialSubtopics,
+      contentId: sanitizedData.contentId,
+      sensitiveTopics: sanitizedData.sensitiveTopics,
+      currentInformation: currentInformation ? {
+        facts2025: currentInformation.facts2025,
+        recentDevelopments: currentInformation.recentDevelopments,
+        industryTrends: currentInformation.industryTrends,
+        relevantEvents: currentInformation.relevantEvents
+      } : undefined
     };
 
     // Generate content
@@ -136,7 +188,9 @@ export async function POST(request: NextRequest) {
       metadata: {
         processingTime,
         model: 'gpt-4o',
-        version: '1.0.0'
+        version: '1.0.0',
+        currentInformationUsed: !!currentInformation,
+        factsIntegrated: currentInformation ? currentInformation.facts2025.length : 0
       }
     }, { status: 200 });
 
@@ -180,8 +234,8 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET endpoint for retrieving generation status or configuration
-export async function GET(request: NextRequest) {
+// Internal GET handler
+async function handleGET(request: NextRequest) {
   try {
     // Authenticate request
     const authResult = await authenticateRequest(request);
@@ -228,3 +282,7 @@ export async function GET(request: NextRequest) {
     }, { status: 500 });
   }
 }
+
+// Export CORS-protected route handlers
+export const POST = withCors(handlePOST);
+export const GET = withCors(handleGET);

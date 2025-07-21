@@ -1,0 +1,325 @@
+{
+  "info": {
+    "name": "SEO Automation API",
+    "description": "Complete API collection for SEO Automation App with real-world examples",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://seo-automation-app.vercel.app/api",
+      "type": "string"
+    },
+    {
+      "key": "local_url",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"fullName\": \"John Doe\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('jwt_token', response.token);",
+                  "    console.log('JWT token saved to collection variables');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Content Generation",
+      "item": [
+        {
+          "name": "Generate SEO Content - Basic",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"keyword\": \"SEO best practices 2025\",\n  \"industry\": \"Digital Marketing\",\n  \"targetAudience\": \"Marketing professionals\",\n  \"tone\": \"authoritative\",\n  \"wordCount\": 1500,\n  \"targetKeywordDensity\": 2.5,\n  \"lsiKeywords\": [\n    \"search engine optimization\",\n    \"content marketing\",\n    \"keyword research\",\n    \"SERP ranking\",\n    \"organic traffic\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/content/generate",
+              "host": ["{{base_url}}"],
+              "path": ["content", "generate"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Generate SEO Content - Advanced",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"keyword\": \"AI content generation tools\",\n  \"industry\": \"Technology\",\n  \"targetAudience\": \"Content creators and marketers\",\n  \"tone\": \"thought-provoking\",\n  \"wordCount\": 2500,\n  \"competitorInsights\": \"Competitors focus on basic automation without advanced AI reasoning. Opportunity for deep technical expertise.\",\n  \"targetKeywordDensity\": 1.8,\n  \"lsiKeywords\": [\n    \"artificial intelligence\",\n    \"machine learning\",\n    \"natural language processing\",\n    \"content automation\",\n    \"GPT models\",\n    \"content strategy\"\n  ],\n  \"entities\": [\n    {\n      \"name\": \"OpenAI\",\n      \"type\": \"ORGANIZATION\"\n    },\n    {\n      \"name\": \"ChatGPT\",\n      \"type\": \"PRODUCT\"\n    },\n    {\n      \"name\": \"San Francisco\",\n      \"type\": \"LOCATION\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/content/generate",
+              "host": ["{{base_url}}"],
+              "path": ["content", "generate"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Integrate Keywords into Content",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"This is sample content that needs keyword integration and optimization for better search engine rankings.\",\n  \"primaryKeyword\": \"SEO optimization\",\n  \"lsiKeywords\": [\n    \"search engine\",\n    \"ranking factors\",\n    \"content quality\"\n  ],\n  \"entities\": [\n    {\n      \"name\": \"Google\",\n      \"type\": \"ORGANIZATION\",\n      \"relevance\": 0.9\n    }\n  ],\n  \"competitorData\": [\n    {\n      \"url\": \"https://competitor1.com/seo-guide\",\n      \"wordCount\": 2000,\n      \"keywordDensity\": 2.1,\n      \"headingOptimization\": 8,\n      \"lsiKeywordCount\": 15,\n      \"entityCount\": 5,\n      \"readabilityScore\": 85,\n      \"contentQuality\": 92\n    },\n    {\n      \"url\": \"https://competitor2.com/seo-tips\",\n      \"wordCount\": 1800,\n      \"keywordDensity\": 2.3,\n      \"headingOptimization\": 6,\n      \"lsiKeywordCount\": 12,\n      \"entityCount\": 4,\n      \"readabilityScore\": 78,\n      \"contentQuality\": 88\n    },\n    {\n      \"url\": \"https://competitor3.com/optimization\",\n      \"wordCount\": 2200,\n      \"keywordDensity\": 1.9,\n      \"headingOptimization\": 10,\n      \"lsiKeywordCount\": 18,\n      \"entityCount\": 7,\n      \"readabilityScore\": 82,\n      \"contentQuality\": 90\n    },\n    {\n      \"url\": \"https://competitor4.com/seo-best-practices\",\n      \"wordCount\": 1900,\n      \"keywordDensity\": 2.4,\n      \"headingOptimization\": 7,\n      \"lsiKeywordCount\": 14,\n      \"entityCount\": 6,\n      \"readabilityScore\": 86,\n      \"contentQuality\": 94\n    },\n    {\n      \"url\": \"https://competitor5.com/search-optimization\",\n      \"wordCount\": 2100,\n      \"keywordDensity\": 2.0,\n      \"headingOptimization\": 9,\n      \"lsiKeywordCount\": 16,\n      \"entityCount\": 5,\n      \"readabilityScore\": 80,\n      \"contentQuality\": 87\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/content/integrate",
+              "host": ["{{base_url}}"],
+              "path": ["content", "integrate"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "SEO Analysis",
+      "item": [
+        {
+          "name": "SERP Analysis - USA",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"keyword\": \"best SEO tools 2025\",\n  \"location\": \"United States\",\n  \"numResults\": 10\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/serp/analyze",
+              "host": ["{{base_url}}"],
+              "path": ["serp", "analyze"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "SERP Analysis - International",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"keyword\": \"digital marketing strategy\",\n  \"location\": \"United Kingdom\",\n  \"numResults\": 20\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/serp/analyze",
+              "host": ["{{base_url}}"],
+              "path": ["serp", "analyze"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Content SEO Analysis",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Search engine optimization (SEO) is a crucial digital marketing strategy that helps websites improve their visibility in search engine results pages (SERPs). Effective SEO involves optimizing various elements of a website, including content quality, keyword usage, meta tags, and technical factors like page loading speed and mobile responsiveness. Modern SEO practices emphasize creating high-quality, user-focused content that provides genuine value to readers while incorporating relevant keywords naturally. The most successful SEO strategies combine technical optimization with content marketing, ensuring that websites not only rank well but also engage and convert visitors effectively.\",\n  \"targetKeywords\": [\n    \"SEO\",\n    \"search engine optimization\",\n    \"digital marketing\",\n    \"SERP\",\n    \"keyword optimization\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/seo/analyze",
+              "host": ["{{base_url}}"],
+              "path": ["seo", "analyze"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Intelligence Analysis",
+      "item": [
+        {
+          "name": "Competitor Intelligence Analysis",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"keyword\": \"content marketing automation\",\n  \"competitors\": [\n    \"https://hubspot.com\",\n    \"https://semrush.com\",\n    \"https://ahrefs.com\",\n    \"https://moz.com\",\n    \"https://screamingnrog.co.uk\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/intelligence/analyze",
+              "host": ["{{base_url}}"],
+              "path": ["intelligence", "analyze"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "System Health",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Set timestamp for all requests",
+          "pm.globals.set('timestamp', new Date().toISOString());"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test to check response time",
+          "pm.test('Response time is less than 30 seconds', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(30000);",
+          "});",
+          "",
+          "// Global test to check response format",
+          "pm.test('Response has JSON content-type', function () {",
+          "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+          "});"
+        ]
+      }
+    }
+  ]
+}

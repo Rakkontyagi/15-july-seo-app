@@ -4,6 +4,7 @@ import { Component, ErrorInfo, ReactNode } from 'react';
 import { Button } from './button';
 import { Card, CardContent, CardHeader, CardTitle } from './card';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { createComponentLogger } from '@/lib/logging/logger';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -18,6 +19,8 @@ interface ErrorBoundaryState {
 }
 
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  private logger = createComponentLogger('ErrorBoundary');
+
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = {
@@ -41,8 +44,13 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
       errorInfo,
     });
 
-    // Log error to monitoring service
-    console.error('Error caught by boundary:', error, errorInfo);
+    // Log error using centralized logger
+    this.logger.error('Error caught by UI error boundary', {
+      error: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+      isDevelopment: process.env.NODE_ENV === 'development'
+    });
     
     // Call custom error handler if provided
     this.props.onError?.(error, errorInfo);
@@ -113,9 +121,15 @@ export default ErrorBoundary;
 
 // Hook for functional components to handle async errors
 export function useErrorHandler() {
+  const logger = createComponentLogger('useErrorHandler');
+  
   return (error: Error, errorInfo?: ErrorInfo) => {
-    console.error('Async error:', error, errorInfo);
-    // Could integrate with error reporting service here
+    logger.error('Async error handled by hook', {
+      error: error.message,
+      stack: error.stack,
+      componentStack: errorInfo?.componentStack,
+      context: 'async-operation'
+    });
   };
 }
 
@@ -127,11 +141,18 @@ export function AsyncErrorBoundary({
   children: ReactNode; 
   fallback?: ReactNode;
 }) {
+  const logger = createComponentLogger('AsyncErrorBoundary');
+  
   return (
     <ErrorBoundary
       fallback={fallback}
       onError={(error, errorInfo) => {
-        console.error('Async operation failed:', error, errorInfo);
+        logger.error('Async operation failed in boundary', {
+          error: error.message,
+          stack: error.stack,
+          componentStack: errorInfo.componentStack,
+          context: 'async-boundary'
+        });
       }}
     >
       {children}

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { createComponentLogger } from '@/lib/logging/logger';
 import { 
   Brain, 
   Lightbulb, 
@@ -93,7 +94,8 @@ export function AIWritingAssistant({
       
       setSuggestions(mockSuggestions);
     } catch (error) {
-      console.error('Failed to generate suggestions:', error);
+      const logger = createComponentLogger('AIWritingAssistant');
+      logger.error('Failed to generate suggestions:', { error: error instanceof Error ? error.message : error });
     } finally {
       setIsGenerating(false);
     }
@@ -121,7 +123,8 @@ export function AIWritingAssistant({
       setSuggestions(prev => [customSuggestion, ...prev]);
       setPrompt('');
     } catch (error) {
-      console.error('Failed to process custom prompt:', error);
+      const logger = createComponentLogger('AIWritingAssistant');
+      logger.error('Failed to process custom prompt:', { error: error instanceof Error ? error.message : error });
     } finally {
       setIsGenerating(false);
     }
@@ -133,7 +136,8 @@ export function AIWritingAssistant({
       setCopiedId(id);
       setTimeout(() => setCopiedId(null), 2000);
     } catch (error) {
-      console.error('Failed to copy:', error);
+      const logger = createComponentLogger('AIWritingAssistant');
+      logger.error('Failed to copy:', { error: error instanceof Error ? error.message : error });
     }
   };
 

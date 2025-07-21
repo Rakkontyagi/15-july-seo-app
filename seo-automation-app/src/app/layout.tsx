@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import "../styles/mobile-responsive.css";
 import { AuthProvider } from "@/providers/auth-provider";
 import { Analytics, SpeedInsights } from "@/lib/analytics/vercel";
 import { WebVitals } from "@/components/analytics/web-vitals";
@@ -22,6 +23,24 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "SEO Content Generator",
   description: "AI-powered SEO content generation platform",
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#000000' },
+  ],
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'SEO Generator',
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 // Initialize Sentry

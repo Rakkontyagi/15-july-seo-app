@@ -23,6 +23,7 @@ import {
   Edit,
   Trash2
 } from 'lucide-react';
+import { createComponentLogger } from '@/lib/logging/logger';
 
 interface ReportTemplate {
   id: string;
@@ -188,7 +189,8 @@ export function ReportGenerator() {
     setIsGenerating(false);
     
     // In a real app, this would trigger a download
-    console.log('Report generated with sections:', selectedSections);
+    const logger = createComponentLogger('ReportGenerator');
+      logger.info('Report generated with sections:', { data: selectedSections });
   };
 
   const getStatusColor = (status: ReportTemplate['status']) => {

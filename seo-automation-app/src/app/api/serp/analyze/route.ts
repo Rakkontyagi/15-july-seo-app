@@ -6,6 +6,7 @@ import { SERPAnalysisRequestSchema } from '@/types/serp';
 import { authenticateRequest } from '@/lib/auth/middleware';
 import { logger } from '@/lib/logging/logger';
 import { createClient } from '@supabase/supabase-js';
+import { sanitizeSearchQuery } from '@/lib/validation/sanitizer';
 
 export async function POST(request: NextRequest) {
   try {
@@ -138,11 +139,13 @@ export async function GET(request: NextRequest) {
       .limit(limit);
 
     if (keyword) {
-      query = query.ilike('keyword', `%${keyword}%`);
+      const sanitizedKeyword = sanitizeSearchQuery(keyword);
+      query = query.ilike('keyword', `%${sanitizedKeyword}%`);
     }
 
     if (location) {
-      query = query.ilike('location', `%${location}%`);
+      const sanitizedLocation = sanitizeSearchQuery(location);
+      query = query.ilike('location', `%${sanitizedLocation}%`);
     }
 
     const { data, error } = await query;

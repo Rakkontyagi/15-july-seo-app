@@ -410,7 +410,9 @@ export class ScalingMiddleware {
     requestId: string, 
     metrics: RequestMetrics
   ): void {
-    console.error('Scaling middleware error:', error);
+    // Use centralized logger instead of console
+    const { logger } = require('../../src/lib/logging/logger');
+    logger.error('Scaling middleware error', { error: error.message, stack: error.stack, requestId });
     
     metrics.endTime = Date.now();
     metrics.duration = metrics.endTime - metrics.startTime;

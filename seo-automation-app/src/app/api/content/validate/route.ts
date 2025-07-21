@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { RealTimeFactVerifier } from '@/lib/ai/real-time-fact-verifier';
 import { AntiHallucinationEngine } from '@/lib/ai/anti-hallucination-engine';
 import { SourceValidator } from '@/lib/ai/source-validator';
+import { sanitizeText } from '@/lib/validation/sanitizer';
 
 // Request validation schema
 const validationRequestSchema = z.object({
@@ -32,6 +33,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = validationRequestSchema.parse(body);
 
+    // Sanitize input content to prevent XSS and injection attacks
+    const sanitizedData = {
+      ...validatedData,
+      content: sanitizeText(validatedData.content, { maxLength: 100000 }),
+      industry: validatedData.industry ? sanitizeText(validatedData.industry, { maxLength: 100 }) : undefined
+    };
+
     // Initialize validation services
     const factVerifier = new RealTimeFactVerifier();
     const hallucinationEngine = new AntiHallucinationEngine();
@@ -41,20 +49,20 @@ export async function POST(request: NextRequest) {
 
     // Step 1: Real-time fact verification (if enabled)
     let factVerificationResult = null;
-    if (validatedData.options?.checkFacts !== false) {
-      factVerificationResult = await factVerifier.verifyContentFacts(validatedData.content);
+    if (sanitizedData.options?.checkFacts !== false) {
+      factVerificationResult = await factVerifier.verifyContentFacts(sanitizedData.content);
     }
 
     // Step 2: Anti-hallucination detection (if enabled)
     let hallucinationCheckResult = null;
-    if (validatedData.options?.checkHallucinations !== false) {
-      hallucinationCheckResult = await hallucinationEngine.preventHallucinations(validatedData.content);
+    if (sanitizedData.options?.checkHallucinations !== false) {
+      hallucinationCheckResult = await hallucinationEngine.preventHallucinations(sanitizedData.content);
     }
 
     // Step 3: Source validation (if enabled)
     let citationAnalysis = null;
-    if (validatedData.options?.validateSources !== false) {
-      citationAnalysis = await sourceValidator.analyzeCitations(validatedData.content);
+    if (sanitizedData.options?.validateSources !== false) {
+      citationAnalysis = await sourceValidator.analyzeCitations(sanitizedData.content);
     }
 
     // Step 4: Calculate overall validation score
@@ -62,7 +70,7 @@ export async function POST(request: NextRequest) {
       factVerificationResult,
       hallucinationCheckResult,
       citationAnalysis,
-      validatedData.options
+      sanitizedData.options
     );
 
     // Step 5: Generate comprehensive recommendations

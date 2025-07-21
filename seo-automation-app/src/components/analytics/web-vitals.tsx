@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { onCLS, onINP, onFCP, onLCP, onTTFB } from 'web-vitals';
 import { trackWebVitals, trackPerformanceBudget } from '@/lib/analytics/vercel';
+import { createComponentLogger } from '@/lib/logging/logger';
 
 // Performance budgets (in milliseconds)
 const PERFORMANCE_BUDGETS = {
@@ -26,21 +27,24 @@ export function WebVitals({ debug = false }: WebVitalsProps) {
       trackWebVitals(metric);
       trackPerformanceBudget('FCP', metric.value, PERFORMANCE_BUDGETS.FCP);
       if (debug) {
-        console.log('FCP:', metric);
+        const logger = createComponentLogger('web-vitals');
+      logger.info('FCP:', { data: metric });
       }
     });
     onLCP((metric) => {
       trackWebVitals(metric);
       trackPerformanceBudget('LCP', metric.value, PERFORMANCE_BUDGETS.LCP);
       if (debug) {
-        console.log('LCP:', metric);
+        const logger = createComponentLogger('web-vitals');
+      logger.info('LCP:', { data: metric });
       }
     });
     onTTFB((metric) => {
       trackWebVitals(metric);
       trackPerformanceBudget('TTFB', metric.value, PERFORMANCE_BUDGETS.TTFB);
       if (debug) {
-        console.log('TTFB:', metric);
+        const logger = createComponentLogger('web-vitals');
+      logger.info('TTFB:', { data: metric });
       }
     });
   }, [debug]);

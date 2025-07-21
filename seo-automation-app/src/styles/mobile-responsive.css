@@ -1,0 +1,239 @@
+/* Mobile Responsiveness Optimizations */
+
+/* Base responsive utilities */
+@media (max-width: 640px) {
+  /* Container adjustments */
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  /* Typography scaling */
+  h1 {
+    font-size: 1.875rem; /* 30px */
+    line-height: 2.25rem; /* 36px */
+  }
+  
+  h2 {
+    font-size: 1.5rem; /* 24px */
+    line-height: 2rem; /* 32px */
+  }
+  
+  h3 {
+    font-size: 1.25rem; /* 20px */
+    line-height: 1.75rem; /* 28px */
+  }
+  
+  /* Button optimizations */
+  .btn-mobile {
+    min-height: 44px; /* Touch target size */
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+  }
+  
+  /* Form field optimizations */
+  .form-field-mobile {
+    min-height: 44px;
+    padding: 0.75rem;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  /* Card spacing */
+  .card-mobile {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    border-radius: 0.5rem;
+  }
+  
+  /* Navigation optimizations */
+  .nav-mobile {
+    padding: 0.5rem;
+  }
+  
+  .nav-item-mobile {
+    padding: 0.75rem 1rem;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+  
+  /* Table responsiveness */
+  .table-mobile {
+    font-size: 0.875rem;
+  }
+  
+  .table-mobile th,
+  .table-mobile td {
+    padding: 0.5rem 0.25rem;
+  }
+  
+  /* Hide less important columns on mobile */
+  .table-mobile .hidden-mobile {
+    display: none;
+  }
+  
+  /* Dashboard grid adjustments */
+  .dashboard-grid-mobile {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  /* Modal adjustments */
+  .modal-mobile {
+    margin: 1rem;
+    max-height: calc(100vh - 2rem);
+    border-radius: 0.5rem;
+  }
+  
+  /* Content editor mobile */
+  .content-editor-mobile {
+    min-height: 200px;
+    font-size: 16px; /* Prevents zoom */
+  }
+  
+  /* SEO metrics mobile */
+  .seo-metrics-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .seo-metric-item-mobile {
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+  }
+  
+  /* Progress indicators */
+  .progress-mobile {
+    height: 8px;
+    border-radius: 4px;
+    margin: 0.5rem 0;
+  }
+  
+  /* Loading states */
+  .loading-mobile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+    text-align: center;
+  }
+  
+  /* Error states */
+  .error-mobile {
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+    text-align: center;
+  }
+}
+
+/* Tablet responsive adjustments */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .container {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+  
+  .dashboard-grid-tablet {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+  
+  .table-tablet th,
+  .table-tablet td {
+    padding: 0.75rem 0.5rem;
+  }
+}
+
+/* Touch-specific optimizations */
+@media (hover: none) and (pointer: coarse) {
+  /* Increase touch targets */
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Remove hover effects on touch devices */
+  .hover-effect:hover {
+    transform: none;
+    background-color: initial;
+  }
+  
+  /* Focus states for accessibility */
+  button:focus,
+  a:focus,
+  input:focus,
+  select:focus,
+  textarea:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+}
+
+/* Landscape mobile adjustments */
+@media (max-width: 896px) and (orientation: landscape) {
+  .modal-landscape {
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  
+  .nav-landscape {
+    padding: 0.25rem;
+  }
+  
+  .content-landscape {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  /* Ensure sharp icons and images */
+  .icon-sharp {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Dark mode mobile adjustments */
+@media (prefers-color-scheme: dark) and (max-width: 640px) {
+  .card-mobile-dark {
+    background: #1f2937;
+    border-color: #374151;
+    color: #f9fafb;
+  }
+  
+  .seo-metric-item-mobile-dark {
+    background: #111827;
+    border-color: #374151;
+    color: #e5e7eb;
+  }
+  
+  .error-mobile-dark {
+    background: #7f1d1d;
+    border-color: #dc2626;
+    color: #fecaca;
+  }
+}

@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { createServiceLogger } from '@/lib/logging/logger';
 import { ContentLibraryService } from '@/lib/services/content-library.service';
 import { authenticateRequest } from '@/lib/auth/middleware';
+import { sanitizeText, sanitizeSearchQuery } from '@/lib/validation/sanitizer';
 
 const logger = createServiceLogger('content-search-api');
 
@@ -51,14 +52,14 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     
-    // Parse search parameters
+    // Parse and sanitize search parameters
     const searchData = {
-      query: searchParams.get('query') || undefined,
-      project_id: searchParams.get('project_id') || undefined,
-      client_name: searchParams.get('client_name') || undefined,
-      campaign_name: searchParams.get('campaign_name') || undefined,
-      category: searchParams.get('category') || undefined,
-      tags: searchParams.get('tags')?.split(',').filter(Boolean) || undefined,
+      query: searchParams.get('query') ? sanitizeSearchQuery(searchParams.get('query')!) : undefined,
+      project_id: searchParams.get('project_id') ? sanitizeText(searchParams.get('project_id')!, { maxLength: 50 }) : undefined,
+      client_name: searchParams.get('client_name') ? sanitizeText(searchParams.get('client_name')!, { maxLength: 100 }) : undefined,
+      campaign_name: searchParams.get('campaign_name') ? sanitizeText(searchParams.get('campaign_name')!, { maxLength: 100 }) : undefined,
+      category: searchParams.get('category') ? sanitizeText(searchParams.get('category')!, { maxLength: 50 }) : undefined,
+      tags: searchParams.get('tags')?.split(',').filter(Boolean).map(tag => sanitizeText(tag.trim(), { maxLength: 50 })) || undefined,
       status: searchParams.get('status') || undefined,
       content_type: searchParams.get('content_type') || undefined,
       min_word_count: searchParams.get('min_word_count') || undefined,
@@ -133,7 +134,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const validatedParams = ContentSearchSchema.parse(body);
+    
+    // Sanitize body data
+    const sanitizedBody = {
+      ...body,
+      query: body.query ? sanitizeSearchQuery(body.query) : undefined,
+      client_name: body.client_name ? sanitizeText(body.client_name, { maxLength: 100 }) : undefined,
+      campaign_name: body.campaign_name ? sanitizeText(body.campaign_name, { maxLength: 100 }) : undefined,
+      category: body.category ? sanitizeText(body.category, { maxLength: 50 }) : undefined,
+      tags: body.tags ? body.tags.map((tag: string) => sanitizeText(tag, { maxLength: 50 })) : undefined,
+    };
+    
+    const validatedParams = ContentSearchSchema.parse(sanitizedBody);
 
     const searchResult = await contentLibraryService.searchContent(
       authResult.user.id,

@@ -1,0 +1,112 @@
+name: 📊 Performance Monitoring
+
+on:
+  schedule:
+    - cron: '0 */6 * * *' # Every 6 hours
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to monitor'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - staging
+
+jobs:
+  # 🎯 Lighthouse Performance Audit
+  lighthouse-audit:
+    name: 🎯 Lighthouse Performance Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+
+      - name: 🎯 Run Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v10
+        with:
+          configPath: './lighthouse.config.js'
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+          urls: |
+            https://seo-automation-app.vercel.app
+            https://seo-automation-app.vercel.app/dashboard
+            https://seo-automation-app.vercel.app/api/health
+
+      - name: 📊 Performance Budget Check
+        run: |
+          npm ci --legacy-peer-deps
+          npm run test:performance-budget
+        continue-on-error: true
+
+  # 🔄 Load Testing
+  load-testing:
+    name: 🔄 Load Testing
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event.inputs.environment == 'staging' || github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup K6
+        uses: grafana/setup-k6-action@v1
+
+      - name: 🔄 Run load tests
+        run: |
+          k6 run performance/load-test.js
+        env:
+          K6_WEB_DASHBOARD: true
+          K6_WEB_DASHBOARD_EXPORT: html-report.html
+
+      - name: 📊 Upload load test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-test-results
+          path: html-report.html
+          retention-days: 7
+
+  # 📈 Real User Monitoring
+  rum-check:
+    name: 📈 Real User Monitoring
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📈 Core Web Vitals Check
+        run: |
+          curl -s "https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=https://seo-automation-app.vercel.app&category=performance" | \
+          jq '.lighthouseResult.audits."largest-contentful-paint".displayValue, .lighthouseResult.audits."first-input-delay".displayValue, .lighthouseResult.audits."cumulative-layout-shift".displayValue'
+
+  # 🚨 Performance Alerts
+  performance-alerts:
+    name: 🚨 Performance Alerts
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [lighthouse-audit, load-testing]
+    if: failure()
+    
+    steps:
+      - name: 🚨 Send performance alert
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 Performance Alert: Thresholds Exceeded',
+              body: `Performance monitoring detected issues:\n\n- Lighthouse audit failed\n- Load testing exceeded limits\n\nPlease investigate immediately.`,
+              labels: ['performance', 'urgent', 'monitoring']
+            })
