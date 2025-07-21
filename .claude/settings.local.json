@@ -39,7 +39,8 @@
       "Bash(npx eslint:*)",
       "mcp__context7__resolve-library-id",
       "mcp__context7__get-library-docs",
-      "Bash(timeout 30s npx eslint src/lib/utils/cn.ts)"
+      "Bash(timeout 30s npx eslint src/lib/utils/cn.ts)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }

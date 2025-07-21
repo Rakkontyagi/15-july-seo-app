@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "installCommand": "npm install --legacy-peer-deps",
   "functions": {
     "app/api/content/generate.ts": {
       "maxDuration": 300

@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    appDir: true,
-  },
   typescript: {
     // Dangerously allow production builds to successfully complete even if
     // your project has type errors.
@@ -38,7 +35,6 @@ const nextConfig = {
     return config;
   },
   // Performance optimizations
-  swcMinify: true,
   compress: true,
   poweredByHeader: false,
   generateEtags: false,
