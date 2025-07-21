@@ -1,20 +1,39 @@
-// Mock Supabase client for testing
-export const createClient = () => ({
-  auth: {
-    getSession: () => Promise.resolve({ data: { session: null }, error: null }),
-    getUser: () => Promise.resolve({ data: { user: null }, error: null }),
-    signInWithPassword: () => Promise.resolve({ data: null, error: null }),
-    signUp: () => Promise.resolve({ data: null, error: null }),
-    signOut: () => Promise.resolve({ error: null }),
-  },
-  from: () => ({
-    select: () => ({
-      eq: () => ({
-        single: () => Promise.resolve({ data: null, error: null }),
-      }),
-    }),
-    insert: () => Promise.resolve({ data: null, error: null }),
-    update: () => Promise.resolve({ data: null, error: null }),
-    delete: () => Promise.resolve({ data: null, error: null }),
-  }),
-});
+import { createBrowserClient } from '@supabase/ssr'
+
+// Validate environment variables
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables')
+}
+
+export const createClient = () =>
+  createBrowserClient(
+    supabaseUrl,
+    supabaseAnonKey,
+    {
+      db: {
+        schema: 'public'
+      },
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        flowType: 'pkce'
+      },
+      realtime: {
+        params: {
+          eventsPerSecond: 10
+        }
+      },
+      global: {
+        headers: {
+          'X-Client-Info': 'seo-automation-app@1.0.0'
+        }
+      }
+    }
+  )
+
+// Export singleton instance
+export const supabase = createClient()
