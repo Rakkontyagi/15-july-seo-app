@@ -94,10 +94,20 @@ export function PlanSelector({ tiers, currentTierId, onSelectPlan, onSubscriptio
   };
 
   if (showPaymentForm && selectedTier) {
+    const formattedTier = {
+      id: selectedTier.id,
+      display_name: selectedTier.display_name,
+      price_monthly: selectedTier.price_monthly,
+      price_yearly: selectedTier.price_yearly,
+      features: Array.isArray(selectedTier.features)
+        ? selectedTier.features
+        : Object.keys(selectedTier.features || {})
+    };
+
     return (
       <Elements stripe={stripePromise}>
         <PaymentMethodForm
-          selectedTier={selectedTier}
+          selectedTier={formattedTier}
           billingCycle={billingCycle}
           onSuccess={handlePaymentSuccess}
           onCancel={handlePaymentCancel}

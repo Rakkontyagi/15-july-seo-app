@@ -116,9 +116,7 @@ export async function POST(request: NextRequest) {
         {
           price_data: {
             currency: 'usd',
-            product_data: {
-              name: tier.display_name,
-            },
+            product: tier.display_name,
             unit_amount: price * 100, // Convert to cents
             recurring: {
               interval: billing_cycle === 'yearly' ? 'year' : 'month',
@@ -140,14 +138,14 @@ export async function POST(request: NextRequest) {
         stripe_subscription_id: subscription.id,
         stripe_customer_id: customer.id,
         status: subscription.status,
-        current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-        current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-        cancel_at_period_end: subscription.cancel_at_period_end,
+        current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
+        current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
+        cancel_at_period_end: (subscription as any).cancel_at_period_end,
       });
     
     const result = {
       subscription_id: subscription.id,
-      client_secret: subscription.latest_invoice?.payment_intent?.client_secret,
+      client_secret: (subscription as any).latest_invoice?.payment_intent?.client_secret,
       status: subscription.status,
       requires_action: subscription.status === 'incomplete',
     };

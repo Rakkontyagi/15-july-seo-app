@@ -229,7 +229,7 @@ export function ContentGenerationDashboard() {
     sseManager.closeAllConnections();
   };
 
-  const handleExport = (format: 'html' | 'markdown' | 'docx') => {
+  const handleExport = (format: string) => {
     if (!generatedContent) return;
 
     const blob = new Blob([generatedContent], { type: 'text/plain' });

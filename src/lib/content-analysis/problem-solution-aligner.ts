@@ -58,19 +58,13 @@ export class ProblemSolutionAligner {
         solutionEffectiveness: 0,
         identifiedProblems: [],
         providedSolutions: [],
-        alignmentDetails: {
-          matchedProblems: [],
-          unmatchedProblems: userProblems,
-          solutionGaps: userProblems,
-          strengthAreas: [],
-          improvementAreas: ['Add content to analyze problem-solution alignment']
-        },
-        recommendations: [
+        gapAnalysis: [
+          'Add content to analyze problem-solution alignment',
           'Add substantial content that addresses the specified problems',
           'Include clear problem statements and corresponding solutions',
           'Ensure each problem has a dedicated solution section'
         ],
-        processingTime: 0
+        processingTimeMs: 0
       };
     }
 

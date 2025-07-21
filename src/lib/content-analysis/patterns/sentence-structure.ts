@@ -7,8 +7,8 @@ import { SentenceStructurePattern } from '../../../types/content-analysis';
  * Looks for repetitive structures, predictable patterns, and lack of variation
  */
 export function analyzeSentenceStructure(content: string): SentenceStructurePattern[] {
-  const doc = nlp(content);
-  const sentences = doc.sentences().json();
+  // Simple sentence splitting instead of using compromise
+  const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 0).map(s => ({ text: s.trim() }));
 
   if (sentences.length === 0) return [];
 

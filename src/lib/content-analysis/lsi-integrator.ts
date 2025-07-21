@@ -133,8 +133,8 @@ export class LSIKeywordIntegrator {
     }
 
     // Calculate semantic density
-    const totalWords = competitorContents.reduce((sum, content) => 
-      sum + this.wordTokenizer.tokenize(content).length, 0
+    const totalWords = competitorContents.reduce((sum, content) =>
+      sum + (this.wordTokenizer.tokenize(content) || []).length, 0
     );
     const totalLSITerms = Array.from(allPatterns.values()).reduce((sum, pattern) => 
       sum + pattern.frequency, 0
@@ -159,9 +159,9 @@ export class LSIKeywordIntegrator {
       const doc = compromise(content);
 
       // Extract nouns and adjectives as potential LSI terms
-      const nouns = doc.match('#Noun').json().map((item: any) => item.text || '');
-      const adjectives = doc.match('#Adjective').json().map((item: any) => item.text || '');
-      const verbs = doc.match('#Verb').json().map((item: any) => item.text || '');
+      const nouns = doc.match('#Noun').out('array');
+      const adjectives = doc.match('#Adjective').out('array');
+      const verbs = doc.match('#Verb').out('array');
 
       const allTerms = [...nouns, ...adjectives, ...verbs].filter(term => term.length > 0);
 
@@ -214,7 +214,7 @@ export class LSIKeywordIntegrator {
    */
   private analyzeTermPatterns(content: string, terms: LSIKeyword[]): LSIPattern[] {
     const patterns: LSIPattern[] = [];
-    const words = this.wordTokenizer.tokenize(content);
+    const words = this.wordTokenizer.tokenize(content) || [];
 
     terms.forEach(term => {
       const positions: number[] = [];
@@ -428,9 +428,9 @@ export class LSIKeywordIntegrator {
     const avgSentenceLength = sentences.reduce((sum, s) => sum + s.split(' ').length, 0) / sentences.length;
     
     // Check word variety
-    const words = this.wordTokenizer.tokenize(content);
+    const words = this.wordTokenizer.tokenize(content) || [];
     const uniqueWords = new Set(words.map(w => w.toLowerCase()));
-    const lexicalDiversity = uniqueWords.size / words.length;
+    const lexicalDiversity = words.length > 0 ? uniqueWords.size / words.length : 0;
     
     // Combine factors
     const sentenceVariety = Math.min(1, avgSentenceLength / 20);
@@ -443,14 +443,16 @@ export class LSIKeywordIntegrator {
    * Calculate context preservation
    */
   private calculateContextPreservation(original: string, optimized: string): number {
-    const originalWords = this.wordTokenizer.tokenize(original);
-    const optimizedWords = this.wordTokenizer.tokenize(optimized);
-    
+    const originalWords = this.wordTokenizer.tokenize(original) || [];
+    const optimizedWords = this.wordTokenizer.tokenize(optimized) || [];
+
+    if (originalWords.length === 0) return 0;
+
     const originalSet = new Set(originalWords.map(w => w.toLowerCase()));
     const optimizedSet = new Set(optimizedWords.map(w => w.toLowerCase()));
-    
+
     const intersection = new Set([...originalSet].filter(w => optimizedSet.has(w)));
-    
+
     return (intersection.size / originalSet.size) * 100;
   }
 
@@ -468,7 +470,7 @@ export class LSIKeywordIntegrator {
   }
 
   private calculateTermFrequency(content: string, term: string): number {
-    const words = this.wordTokenizer.tokenize(content);
+    const words = this.wordTokenizer.tokenize(content) || [];
     return words.filter(word => word.toLowerCase() === term.toLowerCase()).length;
   }
 
@@ -477,9 +479,9 @@ export class LSIKeywordIntegrator {
     const termDoc = compromise(term);
     
     // Simple semantic scoring based on part of speech and context
-    const isNoun = termDoc.has('#Noun');
-    const isAdjective = termDoc.has('#Adjective');
-    const isVerb = termDoc.has('#Verb');
+    const isNoun = termDoc.match('#Noun').length > 0;
+    const isAdjective = termDoc.match('#Adjective').length > 0;
+    const isVerb = termDoc.match('#Verb').length > 0;
     
     let score = 0.5; // Base score
     
@@ -497,7 +499,7 @@ export class LSIKeywordIntegrator {
 
     sentences.forEach(sentence => {
       if (sentence.toLowerCase().includes(term.toLowerCase())) {
-        const words = this.wordTokenizer.tokenize(sentence);
+        const words = this.wordTokenizer.tokenize(sentence) || [];
         strengthSum += words.length; // Longer sentences = stronger context
         occurrences++;
       }
@@ -507,7 +509,7 @@ export class LSIKeywordIntegrator {
   }
 
   private calculateSentenceRelevance(sentence: string, lsiKeyword: LSIKeyword): number {
-    const words = this.wordTokenizer.tokenize(sentence);
+    const words = this.wordTokenizer.tokenize(sentence) || [];
     const sentenceLength = words.length;
     
     // Base relevance on sentence length and complexity
@@ -524,8 +526,8 @@ export class LSIKeywordIntegrator {
     const verbCount = doc.match('#Verb').length;
     const adjCount = doc.match('#Adjective').length;
     
-    const totalWords = this.wordTokenizer.tokenize(sentence).length;
-    const complexityRatio = (nounCount + verbCount + adjCount) / totalWords;
+    const totalWords = (this.wordTokenizer.tokenize(sentence) || []).length;
+    const complexityRatio = totalWords > 0 ? (nounCount + verbCount + adjCount) / totalWords : 0;
     
     return Math.min(1, complexityRatio * 2);
   }

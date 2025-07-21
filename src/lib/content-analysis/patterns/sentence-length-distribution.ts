@@ -7,8 +7,8 @@ import { LengthDistribution } from '../../../types/content-analysis';
  * Human writing typically has more varied sentence lengths
  */
 export function analyzeSentenceLengthDistribution(content: string): LengthDistribution {
-  const doc = compromise(content);
-  const sentences = doc.sentences().json();
+  // Simple sentence splitting instead of using compromise
+  const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 0).map(s => ({ text: s.trim() }));
 
   if (sentences.length === 0) {
     return getEmptyDistribution();

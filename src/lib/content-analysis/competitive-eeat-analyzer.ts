@@ -234,10 +234,12 @@ export class CompetitiveEEATAnalyzer {
         authoritativenessGap: 0,
         trustworthinessGap: 0,
         overallGap: 0,
-        strengths: ['No competitors to compare against'],
-        weaknesses: ['Unable to perform competitive analysis'],
-        opportunities: ['Establish market leadership'],
-        threats: ['Unknown competitive landscape']
+        priorityAreas: [{
+          area: 'Market Research',
+          gap: 0,
+          impact: 'high' as const,
+          difficulty: 'medium' as const
+        }]
       };
     }
 

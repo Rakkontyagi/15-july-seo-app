@@ -72,12 +72,12 @@ export function SubscriptionCard({
               {getStatusBadge(subscription.status)}
             </CardTitle>
             <CardDescription>
-              {subscription.subscription_tier?.display_name || 'Unknown Plan'}
+              {subscription.subscription_tier_id || 'Unknown Plan'}
             </CardDescription>
           </div>
           <div className="text-right">
             <p className="text-2xl font-bold">
-              ${subscription.subscription_tier?.price_monthly || 0}
+              $0
             </p>
             <p className="text-sm text-muted-foreground">per month</p>
           </div>
@@ -102,7 +102,7 @@ export function SubscriptionCard({
             <div className="flex justify-between text-sm">
               <span>Content Generated</span>
               <span>
-                {usage.content_generated} / {subscription.subscription_tier?.content_limit || 0}
+                {usage.content_generated} / 100
               </span>
             </div>
             <Progress value={usagePercentage} className="h-2" />

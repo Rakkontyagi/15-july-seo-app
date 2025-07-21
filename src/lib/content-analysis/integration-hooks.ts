@@ -95,7 +95,7 @@ export class IntegrationHooks {
         await subscription.callback(event);
       } catch (error) {
         console.error(`Error in subscription ${subscriptionId} for event ${eventName}:`, error);
-        this.emitEvent('subscriptionError', { subscriptionId, eventName, error: error.message });
+        this.emitEvent('subscriptionError', { subscriptionId, eventName, error: error instanceof Error ? error.message : 'Unknown error' });
       }
     });
 
@@ -175,7 +175,7 @@ export class IntegrationHooks {
         }
       } catch (error) {
         attempt++;
-        console.error(`Webhook ${webhookId} attempt ${attempt} failed:`, error.message);
+        console.error(`Webhook ${webhookId} attempt ${attempt} failed:`, error instanceof Error ? error.message : 'Unknown error');
         
         if (attempt <= config.retryAttempts) {
           // Exponential backoff

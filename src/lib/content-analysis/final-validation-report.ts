@@ -46,7 +46,7 @@ export class FinalValidationReport {
 
     if (finalContent) {
       report += `## Final Content (if approved)\n\n`;
-      report += ````\n${finalContent}\n````\n`;
+      report += `\`\`\`\n${finalContent}\n\`\`\`\n`;
     }
 
     return report;

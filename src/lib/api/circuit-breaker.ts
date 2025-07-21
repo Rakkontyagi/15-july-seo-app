@@ -254,11 +254,4 @@ if (typeof window !== 'undefined') {
   circuitBreakerMonitor.startMonitoring();
 }
 
-// Global type declarations
-declare global {
-  interface Window {
-    Sentry?: {
-      captureMessage: (message: string, options?: any) => void;
-    };
-  }
-}
+// Global type declarations are in RootErrorBoundary.tsx

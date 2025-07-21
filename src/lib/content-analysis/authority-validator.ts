@@ -287,17 +287,17 @@ export class ExpertAuthorityValidator {
 
       const authoritySignals = this.safelyExecute(() =>
         this.detectAuthorityIndicators(sanitizedContent, sanitizedIndustry),
-        { count: 0, indicators: [], credibilityMarkers: [], professionalCredentials: [], industryRecognition: [], thoughtLeadershipMarkers: [] }
+        { count: 0, indicators: [], credibilityMarkers: [], professionalCredentials: [], industryRecognition: [], thoughtLeadershipElements: [] }
       );
 
       const expertInsights = this.safelyExecute(() =>
         this.analyzeInsightQuality(sanitizedContent, sanitizedIndustry),
-        { score: 0, originalityMarkers: [], industryPredictions: [], uniquePerspectives: [], innovativeApproaches: [], thoughtLeadershipIndicators: [] }
+        { score: 0, originalityMarkers: [], advancedAnalysis: [], industryPredictions: [], specializedRecommendations: [], thoughtLeadershipPositioning: [] }
       );
 
       const problemSolvingMaturity = this.safelyExecute(() =>
         this.assessProblemSolvingMaturity(sanitizedContent),
-        { analyticalThinking: 0, systematicApproach: 0, complexProblemSolving: 0, strategicInsight: 0, maturityLevel: 'basic' as const }
+        { analyticalThinking: 0, sophisticatedSolutions: [], multiFacetedAnalysis: [], strategicThinking: [], decisionMakingFramework: [], maturityLevel: 'developing' as const }
       );
 
       const industryBestPractices = this.safelyExecute(() =>
@@ -382,7 +382,7 @@ export class ExpertAuthorityValidator {
       return {
         validationScore: 0,
         sourcesValidated: [],
-        contradictions: [`Validation error: ${error.message}`],
+        contradictions: [`Validation error: ${error instanceof Error ? error.message : 'Unknown error'}`],
         supportingEvidence: []
       };
     }

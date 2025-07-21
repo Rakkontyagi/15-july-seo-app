@@ -73,6 +73,7 @@ interface AppState {
   // Subscription State
   subscription: UserSubscription | null;
   usageStats: UsageStats | null;
+  canGenerateContent: boolean;
   
   // UI State
   sidebarOpen: boolean;
@@ -118,6 +119,7 @@ const initialState = {
   isLoading: false,
   subscription: null,
   usageStats: null,
+  canGenerateContent: true,
   sidebarOpen: true,
   theme: 'system' as const,
   notifications: [],

@@ -2,8 +2,8 @@
 import nlp from 'compromise';
 
 export function randomizeSentenceStructure(content: string): string {
-  const doc = nlp(content);
-  const sentences = doc.sentences().out('array');
+  // Simple sentence splitting instead of using compromise
+  const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 0).map(s => s.trim());
 
   // Simple randomization: shuffle sentences
   for (let i = sentences.length - 1; i > 0; i--) {
