@@ -26,17 +26,20 @@ export class ComprehensiveCoverageAssessor {
     'step-by-step', 'tutorial', 'guide', 'how-to', 'best practices'
   ];
 
-  assessCoverage(content: string, topic: string): CoverageAssessment {
+  assessCoverage(content: string, topic: string): CoverageAnalysis {
     const depthScore = this.calculateDepthScore(content);
     const breadthScore = this.calculateBreadthScore(content, topic);
     const gapAnalysis = this.identifyGaps(content, topic);
 
     return {
-      depthScore,
+      overallCompleteness: (depthScore + breadthScore) / 2,
+      topicCoverage: [],
+      informationGaps: gapAnalysis,
+      contentDepth: depthScore,
       breadthScore,
-      overallScore: (depthScore + breadthScore) / 2,
-      gapAnalysis,
-      recommendations: this.generateRecommendations(depthScore, breadthScore, gapAnalysis)
+      qualityScore: depthScore,
+      recommendations: this.generateRecommendations(depthScore, breadthScore, gapAnalysis),
+      processingTimeMs: 0
     };
   }
 

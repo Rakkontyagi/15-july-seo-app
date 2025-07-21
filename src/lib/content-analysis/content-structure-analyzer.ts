@@ -483,8 +483,8 @@ export class ContentStructureAnalyzer {
   }
 
   private calculateTopicWeight(section: string, topic: string): number {
-    const words = this.wordTokenizer.tokenize(section);
-    const topicOccurrences = words.filter(word => 
+    const words = this.wordTokenizer.tokenize(section) || [];
+    const topicOccurrences = words.filter(word =>
       word.toLowerCase().includes(topic.toLowerCase())
     ).length;
 
@@ -557,9 +557,9 @@ export class ContentStructureAnalyzer {
 
   private calculateSemanticDensity(text: string): number {
     const doc = compromise(text);
-    const words = this.wordTokenizer.tokenize(text);
+    const words = this.wordTokenizer.tokenize(text) || [];
     const meaningfulWords = doc.match('#Noun|#Verb|#Adjective').out('array');
-    
+
     return words.length > 0 ? meaningfulWords.length / words.length : 0;
   }
 
@@ -779,7 +779,7 @@ export class ContentStructureAnalyzer {
   }
 
   private calculateOptimalLength(contents: string[]): number {
-    const lengths = contents.map(content => this.wordTokenizer.tokenize(content).length);
+    const lengths = contents.map(content => (this.wordTokenizer.tokenize(content) || []).length);
     return Math.round(lengths.reduce((sum, len) => sum + len, 0) / lengths.length);
   }
 

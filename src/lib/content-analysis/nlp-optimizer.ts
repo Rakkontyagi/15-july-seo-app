@@ -42,7 +42,7 @@ export class AdvancedNLPOptimizer {
     if (!content || content.trim().length < 5) {
       return {
         optimizedContent: content,
-        metrics: this.calculateMetrics(content, content),
+        metrics: await this.calculateMetrics(content, content, []),
         changes: []
       };
     }

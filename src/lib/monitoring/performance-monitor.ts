@@ -482,9 +482,6 @@ export type {
 // Global type declarations
 declare global {
   interface Window {
-    Sentry?: {
-      addBreadcrumb: (breadcrumb: any) => void;
-    };
     gtag?: (command: string, action: string, parameters: any) => void;
   }
 }

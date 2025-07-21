@@ -80,64 +80,9 @@ const MOCK_TEMPLATES: ContentTemplate[] = [
     seoScore: 95,
     popularity: 4.8,
     tags: ['guide', 'comprehensive', 'seo-optimized'],
-    template: `# The Ultimate Guide to {{topic}}
+    template: "# The Ultimate Guide to [TOPIC]\\n\\n## Introduction\\n\\nWelcome to the most comprehensive guide on [TOPIC]. This guide will provide you with everything you need to know.\\n\\n## What is [TOPIC]?\\n\\n[TOPIC] is an important concept in today's landscape.\\n\\n## Key Benefits\\n\\n1. Benefit 1\\n2. Benefit 2\\n3. Benefit 3\\n\\n## Getting Started\\n\\n### Step 1\\nFirst step description\\n\\n### Step 2\\nSecond step description\\n\\n### Step 3\\nThird step description\\n\\n## Conclusion\\n\\nThis guide has covered the essential aspects of [TOPIC].",
 
-## Introduction
 
-Welcome to the most comprehensive guide on {{topic}}. Whether you're a {{target_audience}} looking to {{primary_goal}}, this guide will provide you with everything you need to know.
-
-## What is {{topic}}?
-
-{{topic}} is {{definition}}. In today's {{industry}} landscape, understanding {{topic}} is crucial for {{benefits}}.
-
-## Why {{topic}} Matters
-
-### Key Benefits
-1. **{{benefit_1}}** - {{benefit_1_description}}
-2. **{{benefit_2}}** - {{benefit_2_description}}
-3. **{{benefit_3}}** - {{benefit_3_description}}
-
-## Getting Started with {{topic}}
-
-### Step 1: {{step_1_title}}
-{{step_1_description}}
-
-### Step 2: {{step_2_title}}
-{{step_2_description}}
-
-### Step 3: {{step_3_title}}
-{{step_3_description}}
-
-## Advanced {{topic}} Strategies
-
-### Strategy 1: {{advanced_strategy_1}}
-{{strategy_1_description}}
-
-### Strategy 2: {{advanced_strategy_2}}
-{{strategy_2_description}}
-
-## Common Mistakes to Avoid
-
-1. **{{mistake_1}}** - {{mistake_1_solution}}
-2. **{{mistake_2}}** - {{mistake_2_solution}}
-3. **{{mistake_3}}** - {{mistake_3_solution}}
-
-## Tools and Resources
-
-### Recommended Tools
-- **{{tool_1}}** - {{tool_1_description}}
-- **{{tool_2}}** - {{tool_2_description}}
-- **{{tool_3}}** - {{tool_3_description}}
-
-## Conclusion
-
-{{topic}} is essential for {{conclusion_benefit}}. By following this guide, you'll be able to {{final_outcome}}.
-
-## Next Steps
-
-1. {{next_step_1}}
-2. {{next_step_2}}
-3. {{next_step_3}}`,
     variables: [
       { name: 'topic', label: 'Main Topic', type: 'text', required: true, placeholder: 'e.g., Digital Marketing' },
       { name: 'target_audience', label: 'Target Audience', type: 'text', required: true, placeholder: 'e.g., business owner' },
@@ -164,58 +109,9 @@ Welcome to the most comprehensive guide on {{topic}}. Whether you're a {{target_
     seoScore: 92,
     popularity: 4.6,
     tags: ['conversion', 'professional', 'service'],
-    template: `# {{service_name}} - {{company_name}}
+    template: "# [SERVICE_NAME] - [COMPANY_NAME]\\n\\n## Transform Your Business with Expert Services\\n\\n[COMPANY_NAME] provides professional services to help businesses achieve their goals.\\n\\n## Why Choose Our Services?\\n\\n### Professional Excellence\\n\\nWe understand your needs and provide tailored solutions.\\n\\n### Our Process\\n\\n1. Consultation\\n2. Planning\\n3. Implementation\\n4. Results\\n\\n## Contact Us\\n\\nReady to get started? Contact us today!"
 
-## Transform Your {{business_area}} with Expert {{service_name}}
-
-{{company_name}} provides {{service_description}} to help {{target_market}} achieve {{primary_outcome}}.
-
-## Why Choose Our {{service_name}}?
-
-### {{unique_value_prop}}
-
-We understand that {{pain_point}}. That's why our {{service_name}} is designed to {{solution_approach}}.
-
-### Our Process
-
-1. **{{process_step_1}}** - {{step_1_description}}
-2. **{{process_step_2}}** - {{step_2_description}}
-3. **{{process_step_3}}** - {{step_3_description}}
-4. **{{process_step_4}}** - {{step_4_description}}
-
-## What You Get
-
-- {{deliverable_1}}
-- {{deliverable_2}}
-- {{deliverable_3}}
-- {{deliverable_4}}
-
-## Success Stories
-
-"{{testimonial_1}}" - {{client_1_name}}, {{client_1_title}}
-
-"{{testimonial_2}}" - {{client_2_name}}, {{client_2_title}}
-
-## Pricing
-
-### {{package_name}}
-Starting at ${{price}}
-
-{{package_description}}
-
-**Includes:**
-- {{feature_1}}
-- {{feature_2}}
-- {{feature_3}}
-
-## Ready to Get Started?
-
-{{cta_text}}
-
-**Contact us today:**
-- Phone: {{phone}}
-- Email: {{email}}
-- Schedule a consultation: {{booking_link}}`,
+,
     variables: [
       { name: 'service_name', label: 'Service Name', type: 'text', required: true },
       { name: 'company_name', label: 'Company Name', type: 'text', required: true },
@@ -242,52 +138,9 @@ Starting at ${{price}}
     seoScore: 88,
     popularity: 4.7,
     tags: ['ecommerce', 'sales', 'product'],
-    template: `# {{product_name}} - {{brand_name}}
+    template: "# [PRODUCT_NAME] - [BRAND_NAME]\\n\\n## Amazing Product Features\\n\\n[PRODUCT_NAME] is the perfect solution for your needs.\\n\\n### Key Features\\n\\n- Feature 1\\n- Feature 2\\n- Feature 3\\n\\n### Order Now\\n\\nGet yours today!"
 
-## {{headline}}
-
-{{product_name}} is the {{product_category}} that {{main_benefit}}. Perfect for {{target_customer}}, this {{product_type}} delivers {{key_outcome}}.
-
-### Key Features
-
-- **{{feature_1}}** - {{feature_1_benefit}}
-- **{{feature_2}}** - {{feature_2_benefit}}
-- **{{feature_3}}** - {{feature_3_benefit}}
-- **{{feature_4}}** - {{feature_4_benefit}}
-
-### Specifications
-
-- {{spec_1}}: {{spec_1_value}}
-- {{spec_2}}: {{spec_2_value}}
-- {{spec_3}}: {{spec_3_value}}
-- {{spec_4}}: {{spec_4_value}}
-
-### What's Included
-
-- {{included_1}}
-- {{included_2}}
-- {{included_3}}
-
-### Why Choose {{product_name}}?
-
-{{unique_selling_point}}
-
-### Customer Reviews
-
-⭐⭐⭐⭐⭐ "{{review_1}}" - {{reviewer_1}}
-
-⭐⭐⭐⭐⭐ "{{review_2}}" - {{reviewer_2}}
-
-### Guarantee
-
-{{guarantee_text}}
-
-### Order Now
-
-{{cta_text}}
-
-**Price: ${{price}}**
-{{shipping_info}}`,
+,
     variables: [
       { name: 'product_name', label: 'Product Name', type: 'text', required: true },
       { name: 'brand_name', label: 'Brand Name', type: 'text', required: true },

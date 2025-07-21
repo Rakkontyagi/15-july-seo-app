@@ -526,12 +526,14 @@ export class HeadingOptimizer {
 
   private calculateSemanticRelevance(text: string): number {
     const doc = compromise(text);
-    const words = this.wordTokenizer.tokenize(text);
-    
+    const words = this.wordTokenizer.tokenize(text) || [];
+
+    if (words.length === 0) return 0;
+
     // Calculate based on meaningful words
     const meaningfulWords = words.filter(word => word.length > 3);
     const meaningfulRatio = meaningfulWords.length / words.length;
-    
+
     // Check for action words and descriptive terms
     const actionWords = doc.match('#Verb').length;
     const descriptiveWords = doc.match('#Adjective').length;
@@ -541,9 +543,12 @@ export class HeadingOptimizer {
   }
 
   private calculateHeadingReadability(text: string): number {
-    const words = this.wordTokenizer.tokenize(text);
+    const words = this.wordTokenizer.tokenize(text) || [];
+
+    if (words.length === 0) return 0;
+
     const averageWordLength = words.reduce((sum, word) => sum + word.length, 0) / words.length;
-    
+
     // Optimal heading length is 6-8 words with average word length of 5-7 characters
     const lengthScore = Math.max(0, 1 - Math.abs(words.length - 7) / 7);
     const wordLengthScore = Math.max(0, 1 - Math.abs(averageWordLength - 6) / 6);
@@ -588,7 +593,7 @@ export class HeadingOptimizer {
     }
     
     // Fallback to first few words
-    const words = this.wordTokenizer.tokenize(firstSentence);
+    const words = this.wordTokenizer.tokenize(firstSentence) || [];
     return words.slice(0, 8).join(' ');
   }
 
@@ -607,9 +612,11 @@ export class HeadingOptimizer {
   }
 
   private calculateKeywordIntegrationScore(original: string, optimized: string): number {
-    const originalWords = this.wordTokenizer.tokenize(original);
-    const optimizedWords = this.wordTokenizer.tokenize(optimized);
-    
+    const originalWords = this.wordTokenizer.tokenize(original) || [];
+    const optimizedWords = this.wordTokenizer.tokenize(optimized) || [];
+
+    if (originalWords.length === 0) return 0;
+
     // Score based on natural integration (minimal word count increase)
     const wordIncrease = optimizedWords.length - originalWords.length;
     const integrationScore = Math.max(0, 1 - wordIncrease / originalWords.length);

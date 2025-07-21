@@ -17,7 +17,9 @@ const limiter = rateLimit({
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
-  const clientIP = request.ip || 'unknown';
+  const clientIP = request.headers.get('x-forwarded-for') ||
+                   request.headers.get('x-real-ip') ||
+                   'unknown';
   
   try {
     // Apply rate limiting
@@ -164,18 +166,18 @@ export async function POST(request: NextRequest) {
     // Determine error type and response
     let statusCode = 500;
     let errorMessage = 'Internal server error';
-    let errorDetails = error.message;
+    let errorDetails = error instanceof Error ? error.message : 'Unknown error';
 
-    if (error.message.includes('SERP analysis failed')) {
+    if (error instanceof Error && error.message.includes('SERP analysis failed')) {
       statusCode = 503;
       errorMessage = 'Search analysis service unavailable';
-    } else if (error.message.includes('No valid competitor URLs found')) {
+    } else if (error instanceof Error && error.message.includes('No valid competitor URLs found')) {
       statusCode = 404;
       errorMessage = 'No competitors found for the given keyword';
-    } else if (error.message.includes('Failed to extract content from any competitor')) {
+    } else if (error instanceof Error && error.message.includes('Failed to extract content from any competitor')) {
       statusCode = 503;
       errorMessage = 'Content extraction service unavailable';
-    } else if (error.message.includes('Content generation failed')) {
+    } else if (error instanceof Error && error.message.includes('Content generation failed')) {
       statusCode = 503;
       errorMessage = 'AI content generation service unavailable';
     }
@@ -266,7 +268,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       { 
         error: 'Health check failed',
-        details: error.message,
+        details: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date().toISOString(),
       },
       { status: 500 }

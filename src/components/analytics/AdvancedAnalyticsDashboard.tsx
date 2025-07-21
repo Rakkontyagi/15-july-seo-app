@@ -138,7 +138,7 @@ export function AdvancedAnalyticsDashboard() {
     }
   };
 
-  const handleExportData = (format: 'csv' | 'pdf' | 'excel') => {
+  const handleExportData = (format: string) => {
     // Implement data export functionality
     console.log(`Exporting analytics data as ${format}`);
   };

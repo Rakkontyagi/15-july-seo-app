@@ -2,8 +2,8 @@
 import nlp from 'compromise';
 
 export function measureWritingFlowDiversity(content: string): number {
-  const doc = nlp(content);
-  const sentences = doc.sentences().json();
+  // Simple sentence splitting instead of using compromise
+  const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 0).map(s => ({ text: s.trim() }));
 
   if (sentences.length < 2) return 1.0; // A single sentence has perfect flow diversity
 

@@ -74,7 +74,7 @@ export async function demonstrateAuthorityValidation() {
     console.log(`   Supporting Evidence: ${externalValidation.supportingEvidence.length} pieces`);
     console.log(`   Contradictions Found: ${externalValidation.contradictions.length}`);
   } catch (error) {
-    console.log(`   External validation demo: ${error.message}`);
+    console.log(`   External validation demo: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 
   console.log('\n=== Demo Complete ===');

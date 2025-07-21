@@ -195,8 +195,8 @@ export class EntityOptimizer {
     }
 
     // Calculate aggregate metrics
-    const totalWords = competitorContents.reduce((sum, content) => 
-      sum + this.wordTokenizer.tokenize(content).length, 0
+    const totalWords = competitorContents.reduce((sum, content) =>
+      sum + (this.wordTokenizer.tokenize(content) || []).length, 0
     );
     const totalEntities = Array.from(allUsagePatterns.values()).reduce((sum, pattern) => 
       sum + pattern.frequency, 0
@@ -419,7 +419,7 @@ export class EntityOptimizer {
     });
 
     // Check sentence length and complexity
-    const words = this.wordTokenizer.tokenize(sentence);
+    const words = this.wordTokenizer.tokenize(sentence) || [];
     const lengthScore = Math.min(1, words.length / 20);
     
     return Math.min(1, relevance + lengthScore * 0.4);
@@ -480,8 +480,8 @@ export class EntityOptimizer {
       context_associations: []
     });
     
-    const words = this.wordTokenizer.tokenize(content);
-    const frequency = mentions / words.length;
+    const words = this.wordTokenizer.tokenize(content) || [];
+    const frequency = words.length > 0 ? mentions / words.length : 0;
     
     return Math.min(1, frequency * 100);
   }
@@ -512,9 +512,9 @@ export class EntityOptimizer {
     
     sentences.forEach(sentence => {
       if (sentence.toLowerCase().includes(entityName.toLowerCase())) {
-        const words = this.wordTokenizer.tokenize(sentence);
-        const importantWords = words.filter(word => 
-          word.length > 3 && 
+        const words = this.wordTokenizer.tokenize(sentence) || [];
+        const importantWords = words.filter(word =>
+          word.length > 3 &&
           !['the', 'and', 'or', 'but', 'with', 'for', 'from'].includes(word.toLowerCase())
         );
         
@@ -547,8 +547,8 @@ export class EntityOptimizer {
 
   private findEntityPositions(content: string, entity: Entity): number[] {
     const positions: number[] = [];
-    const words = this.wordTokenizer.tokenize(content);
-    
+    const words = this.wordTokenizer.tokenize(content) || [];
+
     words.forEach((word, index) => {
       if (word.toLowerCase() === entity.name.toLowerCase()) {
         positions.push(index);
@@ -629,9 +629,9 @@ export class EntityOptimizer {
   }
 
   private calculateContextPreservation(original: string, optimized: string): number {
-    const originalWords = this.wordTokenizer.tokenize(original);
-    const optimizedWords = this.wordTokenizer.tokenize(optimized);
-    
+    const originalWords = this.wordTokenizer.tokenize(original) || [];
+    const optimizedWords = this.wordTokenizer.tokenize(optimized) || [];
+
     const originalSet = new Set(originalWords.map(w => w.toLowerCase()));
     const optimizedSet = new Set(optimizedWords.map(w => w.toLowerCase()));
     
@@ -644,9 +644,9 @@ export class EntityOptimizer {
     const sentences = this.sentenceTokenizer.tokenize(content);
     const avgSentenceLength = sentences.reduce((sum, s) => sum + s.split(' ').length, 0) / sentences.length;
     
-    const words = this.wordTokenizer.tokenize(content);
+    const words = this.wordTokenizer.tokenize(content) || [];
     const uniqueWords = new Set(words.map(w => w.toLowerCase()));
-    const lexicalDiversity = uniqueWords.size / words.length;
+    const lexicalDiversity = words.length > 0 ? uniqueWords.size / words.length : 0;
     
     // Combine factors
     const sentenceVariety = Math.min(1, avgSentenceLength / 20);

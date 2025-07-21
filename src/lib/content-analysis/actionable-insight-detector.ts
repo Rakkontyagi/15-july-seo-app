@@ -90,9 +90,11 @@ export class ActionableInsightDetector {
    * Splits content into sentences
    */
   private splitIntoSentences(content: string): string[] {
-    // Use compromise for better sentence splitting
-    const doc = nlp(content);
-    return doc.sentences().out('array');
+    // Simple sentence splitting - can be enhanced with better NLP
+    return content
+      .split(/[.!?]+/)
+      .map(sentence => sentence.trim())
+      .filter(sentence => sentence.length > 0);
   }
 
   /**
@@ -133,9 +135,10 @@ export class ActionableInsightDetector {
       count += (content.match(regex) || []).length;
     });
     
-    // Count imperative verbs at the beginning of sentences
-    const imperativeVerbs = doc.sentences().if('#Imperative').length;
-    count += imperativeVerbs;
+    // Count imperative verbs at the beginning of sentences (simplified)
+    const imperativePatterns = /^(start|begin|create|make|build|develop|implement|use|try|consider|remember|ensure|avoid|check|verify|test|analyze|review|update|optimize|improve)/gim;
+    const imperativeMatches = content.match(imperativePatterns);
+    count += imperativeMatches ? imperativeMatches.length : 0;
     
     // Count "how to" phrases
     const howToMatches = content.match(/how to \\w+/gi);
@@ -173,12 +176,14 @@ export class ActionableInsightDetector {
       'next', 'then', 'finally', 'lastly', 'to begin'
     ];
     
-    const doc = nlp(content);
+    // Simplified step extraction using regex
     stepPhrases.forEach(phrase => {
-      const matches = doc.sentences().if(phrase).out('array');
+      const regex = new RegExp(`\\b${phrase}\\b[^.!?]*[.!?]`, 'gi');
+      const matches = content.match(regex) || [];
       matches.forEach(match => {
-        if (!steps.includes(match)) {
-          steps.push(match);
+        const cleanMatch = match.trim();
+        if (!steps.includes(cleanMatch)) {
+          steps.push(cleanMatch);
         }
       });
     });

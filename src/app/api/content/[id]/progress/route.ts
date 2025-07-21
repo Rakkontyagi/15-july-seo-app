@@ -49,11 +49,13 @@ const GENERATION_STAGES = [
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const params = await context.params;
   const { searchParams } = new URL(request.url);
   const userId = searchParams.get('userId');
   const connectionId = searchParams.get('connectionId');
+  const contentId = params.id;
 
   // Validate parameters
   if (!userId || !connectionId) {
@@ -177,7 +179,7 @@ export async function GET(
         );
 
         // Store completion in database
-        await storeGenerationResult(params.id, userId, completionMessage.data);
+        await storeGenerationResult(params.id, userId!, completionMessage.data);
       }
 
       controller.close();

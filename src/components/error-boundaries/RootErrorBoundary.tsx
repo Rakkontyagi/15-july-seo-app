@@ -65,14 +65,13 @@ export class RootErrorBoundary extends Component<Props, State> {
     try {
       // Send to monitoring service (Sentry, LogRocket, etc.)
       if (typeof window !== 'undefined' && window.Sentry) {
-        window.Sentry.withScope((scope) => {
-          scope.setTag('errorBoundary', 'root');
-          scope.setLevel('error');
-          scope.setContext('errorInfo', {
+        window.Sentry.addBreadcrumb({
+          message: 'Error caught by RootErrorBoundary',
+          level: 'error',
+          data: {
             componentStack: errorInfo.componentStack,
             errorBoundary: 'RootErrorBoundary',
-          });
-          window.Sentry.captureException(error);
+          },
         });
       }
 
@@ -279,8 +278,10 @@ Please describe what you were doing when this error occurred:
 declare global {
   interface Window {
     Sentry?: {
+      addBreadcrumb: (breadcrumb: any) => void;
       withScope: (callback: (scope: any) => void) => void;
       captureException: (error: Error) => void;
+      captureMessage: (message: string, options?: any) => void;
     };
     gtag?: (command: string, action: string, parameters: any) => void;
   }

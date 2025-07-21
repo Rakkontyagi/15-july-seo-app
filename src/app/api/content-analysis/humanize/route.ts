@@ -23,7 +23,9 @@ const requestCounts = new Map<string, { count: number; resetTime: number }>();
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting
-    const clientIP = request.ip || 'unknown';
+    const clientIP = request.headers.get('x-forwarded-for') ||
+                     request.headers.get('x-real-ip') ||
+                     'unknown';
     if (!checkRateLimit(clientIP)) {
       return NextResponse.json(
         { error: 'Rate limit exceeded. Please try again later.' },
@@ -259,7 +261,15 @@ function validateConfig(config: any): Partial<HumanizationConfig> | undefined {
   }
 
   if (config.enabledFeatures && typeof config.enabledFeatures === 'object') {
-    validatedConfig.enabledFeatures = {};
+    validatedConfig.enabledFeatures = {
+      patternDetection: false,
+      structureVariation: false,
+      vocabularyEnhancement: false,
+      humanMarkers: false,
+      imperfections: false,
+      conversationalElements: false,
+      patternBreaking: false
+    };
     const features = ['patternDetection', 'structureVariation', 'vocabularyEnhancement', 'humanMarkers', 'imperfections', 'conversationalElements', 'patternBreaking'];
     
     features.forEach(feature => {
