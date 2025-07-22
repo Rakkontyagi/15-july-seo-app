@@ -19,8 +19,10 @@ export const BatchScrapingRequestSchema = z.object({
   timeout: z.number().min(5000).max(60000).optional().default(30000)
 });
 
-// Heading structure
-export const HeadingStructureSchema = z.object({
+// Heading structure interface (defined via Zod schema below)
+
+// Heading structure schema
+export const HeadingStructureSchema: z.ZodSchema<HeadingStructure> = z.object({
   level: z.number().min(1).max(6),
   text: z.string(),
   id: z.string().optional(),
@@ -85,7 +87,7 @@ export const ProcessedContentSchema = z.object({
   textContent: z.string(),
   wordCount: z.number().min(0),
   readingTime: z.number().min(0),
-  keywordDensity: z.record(z.number()),
+  keywordDensity: z.record(z.string(), z.number()),
   contentQuality: ContentQualitySchema,
   metadata: ContentMetadataSchema
 });

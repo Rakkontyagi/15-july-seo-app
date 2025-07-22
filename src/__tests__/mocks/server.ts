@@ -4,7 +4,7 @@
  */
 
 import { setupServer } from 'msw/node';
-import { rest } from 'msw';
+import { http, HttpResponse } from 'msw';
 
 // Mock data
 const mockUser = {
@@ -43,162 +43,142 @@ const mockStory = {
 // API handlers
 const handlers = [
   // Authentication endpoints
-  rest.post('/api/auth/login', (req, res, ctx) => {
-    return res(
-      ctx.status(200),
-      ctx.json({
+  http.post('/api/auth/login', () => {
+    return HttpResponse.json({
         user: mockUser,
         session: {
           access_token: 'mock-access-token',
           refresh_token: 'mock-refresh-token',
           expires_at: Date.now() + 3600000,
         },
-      })
-    );
+      }, { status: 200 });
   }),
 
-  rest.post('/api/auth/register', (req, res, ctx) => {
-    return res(
-      ctx.status(201),
-      ctx.json({
+  http.post('/api/auth/register', () => {
+    return HttpResponse.json({
         user: mockUser,
         session: {
           access_token: 'mock-access-token',
           refresh_token: 'mock-refresh-token',
           expires_at: Date.now() + 3600000,
         },
-      })
-    );
+      }, { status: 200 });
   }),
 
-  rest.post('/api/auth/logout', (req, res, ctx) => {
-    return res(ctx.status(200), ctx.json({ success: true }));
+  http.post('/api/auth/logout', () => {
+    return HttpResponse.json({ success: true }, { status: 200 });
   }),
 
-  rest.get('/api/auth/user', (req, res, ctx) => {
-    const authHeader = req.headers.get('authorization');
+  http.get('/api/auth/user', ({ request }) => {
+    const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.includes('Bearer')) {
-      return res(ctx.status(401), ctx.json({ error: 'Unauthorized' }));
+      return HttpResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    return res(ctx.status(200), ctx.json({ user: mockUser }));
+    return HttpResponse.json({ user: mockUser }, { status: 200 });
   }),
 
   // Projects endpoints
-  rest.get('/api/projects', (req, res, ctx) => {
-    return res(
-      ctx.status(200),
-      ctx.json({
+  http.get('/api/projects', () => {
+    return HttpResponse.json({
         projects: [mockProject],
         total: 1,
         page: 1,
         limit: 10,
-      })
-    );
+      }, { status: 200 });
   }),
 
-  rest.post('/api/projects', (req, res, ctx) => {
-    return res(ctx.status(201), ctx.json({ project: mockProject }));
+  http.post('/api/projects', () => {
+    return HttpResponse.json({ project: mockProject }, { status: 201 });
   }),
 
-  rest.get('/api/projects/:id', (req, res, ctx) => {
-    const { id } = req.params;
+  http.get('/api/projects/:id', ({ params }) => {
+    const { id } = params;
     if (id === 'test-project-id') {
-      return res(ctx.status(200), ctx.json({ project: mockProject }));
+      return HttpResponse.json({ project: mockProject }, { status: 200 });
     }
-    return res(ctx.status(404), ctx.json({ error: 'Project not found' }));
+    return HttpResponse.json({ error: 'Project not found' }, { status: 404 });
   }),
 
-  rest.put('/api/projects/:id', (req, res, ctx) => {
-    const { id } = req.params;
+  http.put('/api/projects/:id', ({ params }) => {
+    const { id } = params;
     if (id === 'test-project-id') {
-      return res(ctx.status(200), ctx.json({ project: mockProject }));
+      return HttpResponse.json({ project: mockProject }, { status: 200 });
     }
-    return res(ctx.status(404), ctx.json({ error: 'Project not found' }));
+    return HttpResponse.json({ error: 'Project not found' }, { status: 404 });
   }),
 
-  rest.delete('/api/projects/:id', (req, res, ctx) => {
-    const { id } = req.params;
+  http.delete('/api/projects/:id', ({ params }) => {
+    const { id } = params;
     if (id === 'test-project-id') {
-      return res(ctx.status(200), ctx.json({ success: true }));
+      return HttpResponse.json({ success: true }, { status: 200 });
     }
-    return res(ctx.status(404), ctx.json({ error: 'Project not found' }));
+    return HttpResponse.json({ error: 'Project not found' }, { status: 404 });
   }),
 
   // Stories endpoints
-  rest.get('/api/stories', (req, res, ctx) => {
-    return res(
-      ctx.status(200),
-      ctx.json({
+  http.get('/api/stories', () => {
+    return HttpResponse.json({
         stories: [mockStory],
         total: 1,
         page: 1,
         limit: 10,
-      })
-    );
+      }, { status: 200 });
   }),
 
-  rest.post('/api/stories', (req, res, ctx) => {
-    return res(ctx.status(201), ctx.json({ story: mockStory }));
+  http.post('/api/stories', () => {
+    return HttpResponse.json({ story: mockStory }, { status: 201 });
   }),
 
-  rest.get('/api/stories/:id', (req, res, ctx) => {
-    const { id } = req.params;
+  http.get('/api/stories/:id', ({ params }) => {
+    const { id } = params;
     if (id === 'test-story-id') {
-      return res(ctx.status(200), ctx.json({ story: mockStory }));
+      return HttpResponse.json({ story: mockStory }, { status: 200 });
     }
-    return res(ctx.status(404), ctx.json({ error: 'Story not found' }));
+    return HttpResponse.json({ error: 'Story not found' }, { status: 404 });
   }),
 
-  rest.put('/api/stories/:id', (req, res, ctx) => {
-    const { id } = req.params;
+  http.put('/api/stories/:id', ({ params }) => {
+    const { id } = params;
     if (id === 'test-story-id') {
-      return res(ctx.status(200), ctx.json({ story: mockStory }));
+      return HttpResponse.json({ story: mockStory }, { status: 200 });
     }
-    return res(ctx.status(404), ctx.json({ error: 'Story not found' }));
+    return HttpResponse.json({ error: 'Story not found' }, { status: 404 });
   }),
 
-  rest.delete('/api/stories/:id', (req, res, ctx) => {
-    const { id } = req.params;
+  http.delete('/api/stories/:id', ({ params }) => {
+    const { id } = params;
     if (id === 'test-story-id') {
-      return res(ctx.status(200), ctx.json({ success: true }));
+      return HttpResponse.json({ success: true }, { status: 200 });
     }
-    return res(ctx.status(404), ctx.json({ error: 'Story not found' }));
+    return HttpResponse.json({ error: 'Story not found' }, { status: 404 });
   }),
 
   // Content generation endpoints
-  rest.post('/api/content/generate', (req, res, ctx) => {
-    return res(
-      ctx.status(200),
-      ctx.json({
+  http.post('/api/content/generate', (req, res, ctx) => {
+    return HttpResponse.json({
         content: 'Generated content with sufficient length for testing purposes and validation',
         metadata: {
           wordCount: 100,
           readingTime: 1,
           seoScore: 85,
         },
-      })
-    );
+      }, { status: 200 });
   }),
 
-  rest.post('/api/content/analyze', (req, res, ctx) => {
-    return res(
-      ctx.status(200),
-      ctx.json({
+  http.post('/api/content/analyze', (req, res, ctx) => {
+    return HttpResponse.json({
         analysis: {
           seoScore: 85,
           readabilityScore: 90,
           keywordDensity: 2.5,
           suggestions: ['Add more headings', 'Include internal links'],
         },
-      })
-    );
+      }, { status: 200 });
   }),
 
   // External API mocks
-  rest.post('https://api.openai.com/v1/chat/completions', (req, res, ctx) => {
-    return res(
-      ctx.status(200),
-      ctx.json({
+  http.post('https://api.openai.com/v1/chat/completions', (req, res, ctx) => {
+    return HttpResponse.json({
         choices: [
           {
             message: {
@@ -211,14 +191,11 @@ const handlers = [
           completion_tokens: 20,
           total_tokens: 30,
         },
-      })
-    );
+      }, { status: 200 });
   }),
 
-  rest.post('https://google.serper.dev/search', (req, res, ctx) => {
-    return res(
-      ctx.status(200),
-      ctx.json({
+  http.post('https://google.serper.dev/search', (req, res, ctx) => {
+    return HttpResponse.json({
         organic: [
           {
             title: 'Mock Search Result',
@@ -230,14 +207,11 @@ const handlers = [
           totalResults: 1,
           timeTaken: 0.5,
         },
-      })
-    );
+      }, { status: 200 });
   }),
 
-  rest.post('https://api.firecrawl.dev/v0/scrape', (req, res, ctx) => {
-    return res(
-      ctx.status(200),
-      ctx.json({
+  http.post('https://api.firecrawl.dev/v0/scrape', (req, res, ctx) => {
+    return HttpResponse.json({
         success: true,
         data: {
           content: 'Mock scraped content',
@@ -246,48 +220,41 @@ const handlers = [
             description: 'Mock page description',
           },
         },
-      })
-    );
+      }, { status: 200 });
   }),
 
   // Stripe API mocks
-  rest.post('https://api.stripe.com/v1/customers', (req, res, ctx) => {
-    return res(
-      ctx.status(200),
-      ctx.json({
+  http.post('https://api.stripe.com/v1/customers', (req, res, ctx) => {
+    return HttpResponse.json({
         id: 'cus_mock_customer',
         email: 'test@example.com',
         created: Date.now(),
-      })
-    );
+      }, { status: 200 });
   }),
 
-  rest.post('https://api.stripe.com/v1/subscriptions', (req, res, ctx) => {
-    return res(
-      ctx.status(200),
-      ctx.json({
+  http.post('https://api.stripe.com/v1/subscriptions', (req, res, ctx) => {
+    return HttpResponse.json({
         id: 'sub_mock_subscription',
         status: 'active',
         current_period_end: Date.now() + 30 * 24 * 60 * 60 * 1000,
-      })
-    );
+      }, { status: 200 });
   }),
 
   // Error scenarios for testing
-  rest.get('/api/error/500', (req, res, ctx) => {
+  http.get('/api/error/500', (req, res, ctx) => {
     return res(ctx.status(500), ctx.json({ error: 'Internal server error' }));
   }),
 
-  rest.get('/api/error/404', (req, res, ctx) => {
+  http.get('/api/error/404', (req, res, ctx) => {
     return res(ctx.status(404), ctx.json({ error: 'Not found' }));
   }),
 
-  rest.get('/api/error/timeout', (req, res, ctx) => {
+  http.get('/api/error/timeout', (req, res, ctx) => {
     return res(ctx.delay(10000), ctx.status(408), ctx.json({ error: 'Timeout' }));
   }),
 
   // Rate limiting mock
-  rest.get('/api/rate-limited', (req, res, ctx) => {
+  http.get('/api/rate-limited', (req, res, ctx) => {
     return res(
       ctx.status(429),
       ctx.set('Retry-After', '60'),
@@ -305,7 +272,7 @@ export { handlers };
 // Helper functions for test customization
 export const mockApiError = (endpoint: string, status: number, message: string) => {
   server.use(
-    rest.get(endpoint, (req, res, ctx) => {
+    http.get(endpoint, (req, res, ctx) => {
       return res(ctx.status(status), ctx.json({ error: message }));
     })
   );
@@ -313,7 +280,7 @@ export const mockApiError = (endpoint: string, status: number, message: string) 
 
 export const mockApiSuccess = (endpoint: string, data: any) => {
   server.use(
-    rest.get(endpoint, (req, res, ctx) => {
+    http.get(endpoint, (req, res, ctx) => {
       return res(ctx.status(200), ctx.json(data));
     })
   );
@@ -321,7 +288,7 @@ export const mockApiSuccess = (endpoint: string, data: any) => {
 
 export const mockApiDelay = (endpoint: string, delay: number) => {
   server.use(
-    rest.get(endpoint, (req, res, ctx) => {
+    http.get(endpoint, (req, res, ctx) => {
       return res(ctx.delay(delay), ctx.status(200), ctx.json({ success: true }));
     })
   );

@@ -25,22 +25,7 @@ const eslintConfig = [
         "caughtErrorsIgnorePattern": "^_"
       }],
       
-      // Import/export rules
-      "import/order": ["error", {
-        "groups": [
-          "builtin",
-          "external", 
-          "internal",
-          "parent",
-          "sibling",
-          "index"
-        ],
-        "newlines-between": "always",
-        "alphabetize": {
-          "order": "asc",
-          "caseInsensitive": true
-        }
-      }],
+      // Removed import/order rule as it requires eslint-plugin-import
       
       // React specific rules
       "react/prop-types": "off", // Using TypeScript for prop validation

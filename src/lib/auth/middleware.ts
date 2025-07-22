@@ -8,13 +8,22 @@ export interface AuthUser {
   role?: string;
 }
 
-export async function authenticateRequest(request: NextRequest): Promise<AuthUser | null> {
+export interface AuthResult {
+  success: boolean;
+  user?: AuthUser;
+  error?: string;
+}
+
+export async function authenticateRequest(request: NextRequest): Promise<AuthResult> {
   try {
     // Get authorization header
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       logger.debug('No authorization header found');
-      return null;
+      return {
+        success: false,
+        error: 'No authorization header provided'
+      };
     }
 
     const token = authHeader.substring(7);
@@ -30,26 +39,35 @@ export async function authenticateRequest(request: NextRequest): Promise<AuthUse
 
     if (error || !user) {
       logger.debug('Invalid token or user not found');
-      return null;
+      return {
+        success: false,
+        error: error?.message || 'Invalid token or user not found'
+      };
     }
 
     return {
-      id: user.id,
-      email: user.email!,
-      role: user.user_metadata?.role || 'user'
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email!,
+        role: user.user_metadata?.role || 'user'
+      }
     };
   } catch (error) {
     logger.error('Authentication error:', error);
-    return null;
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Authentication failed'
+    };
   }
 }
 
 export async function requireAuth(request: NextRequest): Promise<AuthUser> {
-  const user = await authenticateRequest(request);
-  if (!user) {
-    throw new Error('Authentication required');
+  const result = await authenticateRequest(request);
+  if (!result.success || !result.user) {
+    throw new Error(result.error || 'Authentication required');
   }
-  return user;
+  return result.user;
 }
 
 export async function requireRole(request: NextRequest, requiredRole: string): Promise<AuthUser> {
