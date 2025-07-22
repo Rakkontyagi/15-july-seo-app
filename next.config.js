@@ -2,7 +2,7 @@
 const nextConfig = {
   // Production-ready config with CDN optimization
   
-  // TypeScript and ESLint - Allow builds to proceed during development
+  // TypeScript and ESLint - Allow builds to proceed
   typescript: {
     ignoreBuildErrors: true,
   },
