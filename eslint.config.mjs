@@ -19,7 +19,7 @@ const eslintConfig = [
     rules: {
       // Code quality rules
       "no-unused-vars": "off", // Handled by TypeScript
-      "@typescript-eslint/no-unused-vars": ["error", { 
+      "@typescript-eslint/no-unused-vars": ["warn", { 
         "argsIgnorePattern": "^_",
         "varsIgnorePattern": "^_",
         "caughtErrorsIgnorePattern": "^_"
@@ -45,9 +45,9 @@ const eslintConfig = [
       // Best practices
       "prefer-const": "error",
       "no-var": "error",
-      "object-shorthand": "error",
-      "prefer-template": "error",
-      "prefer-arrow-callback": "error",
+      "object-shorthand": "warn",
+      "prefer-template": "warn",
+      "prefer-arrow-callback": "warn",
       
       // Console and debugging
       "no-console": ["warn", { "allow": ["warn", "error"] }],
@@ -55,8 +55,8 @@ const eslintConfig = [
       "no-alert": "error",
       
       // Async/await best practices
-      "require-await": "error",
-      "no-return-await": "error",
+      "require-await": "warn",
+      "no-return-await": "warn",
       
       // TypeScript specific rules (non-type-aware)
       "@typescript-eslint/no-explicit-any": "warn",

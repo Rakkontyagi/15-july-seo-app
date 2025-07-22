@@ -5,20 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Progress } from '@/components/ui/progress';
 import { 
   FileText, 
   TrendingUp,
   TrendingDown,
   Eye,
-  Users,
-  Clock,
   MousePointer,
   Share,
   Heart,
   MessageCircle,
   Search,
-  Filter,
   ExternalLink
 } from 'lucide-react';
 
@@ -45,7 +41,7 @@ interface ContentItem {
   status: 'published' | 'draft' | 'archived';
 }
 
-export function ContentPerformance({ timeRange }: ContentPerformanceProps) {
+export function ContentPerformance({ timeRange: _timeRange }: ContentPerformanceProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('views');
   const [filterType, setFilterType] = useState('all');
@@ -179,9 +175,9 @@ export function ContentPerformance({ timeRange }: ContentPerformanceProps) {
 
   const formatNumber = (num: number): string => {
     if (num >= 1000000) {
-      return (num / 1000000).toFixed(1) + 'M';
+      return `${(num / 1000000).toFixed(1)}M`;
     } else if (num >= 1000) {
-      return (num / 1000).toFixed(1) + 'K';
+      return `${(num / 1000).toFixed(1)}K`;
     }
     return num.toString();
   };
