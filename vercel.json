@@ -1,7 +1,5 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
-  "name": "seo-automation-app",
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
@@ -16,81 +14,39 @@
   
   "functions": {
     "src/app/api/content/generate/route.ts": {
-      "runtime": "nodejs18.x",
       "maxDuration": 300,
-      "memory": 3008,
-      "regions": ["iad1", "pdx1", "lhr1"]
-    },
-    "src/app/api/content/bulk/route.ts": {
-      "runtime": "nodejs18.x",
-      "maxDuration": 600,
-      "memory": 3008,
-      "regions": ["iad1", "pdx1", "lhr1"]
-    },
-    "src/app/api/cms/publish/route.ts": {
-      "runtime": "nodejs18.x",
-      "maxDuration": 120,
       "memory": 1024
     },
-    "src/app/api/cms/test/route.ts": {
-      "runtime": "nodejs18.x",
-      "maxDuration": 30,
+    "src/app/api/content/bulk/route.ts": {
+      "maxDuration": 300,
+      "memory": 1024
+    },
+    "src/app/api/cms/publish/route.ts": {
+      "maxDuration": 120,
       "memory": 512
     },
     "src/app/api/serp/analyze/route.ts": {
-      "runtime": "nodejs18.x",
       "maxDuration": 60,
-      "memory": 1024,
-      "regions": ["iad1", "pdx1", "lhr1", "fra1"]
+      "memory": 512
     },
     "src/app/api/content/scrape/route.ts": {
-      "runtime": "nodejs18.x",
       "maxDuration": 120,
-      "memory": 1024
+      "memory": 512
     },
     "src/app/api/ai/generate/route.ts": {
-      "runtime": "nodejs18.x",
       "maxDuration": 180,
-      "memory": 1024
+      "memory": 512
     },
     "src/app/api/health/route.ts": {
-      "runtime": "edge",
-      "maxDuration": 10,
-      "memory": 128
-    },
-    "src/app/api/metrics/route.ts": {
-      "runtime": "nodejs18.x",
-      "maxDuration": 10,
+      "maxDuration": 30,
       "memory": 256
     },
-    "src/app/api/projects/*/route.ts": {
-      "runtime": "nodejs18.x",
-      "memory": 512,
-      "maxDuration": 30
-    },
-    "src/app/api/auth/*/route.ts": {
-      "runtime": "nodejs18.x",
-      "memory": 256,
-      "maxDuration": 15
+    "src/app/api/metrics/route.ts": {
+      "maxDuration": 10,
+      "memory": 128
     }
   },
   
-  "regions": ["iad1", "pdx1", "lhr1", "fra1", "sin1", "nrt1"],
-  
-  "crons": [
-    {
-      "path": "/api/cron/health-check",
-      "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/cron/cleanup",
-      "schedule": "0 2 * * *"
-    },
-    {
-      "path": "/api/cron/metrics",
-      "schedule": "*/15 * * * *"
-    }
-  ],
   "headers": [
     {
       "source": "/_next/static/(.*)",
@@ -98,23 +54,6 @@
         {
           "key": "Cache-Control",
           "value": "public, max-age=31536000, immutable"
-        },
-        {
-          "key": "Vary",
-          "value": "Accept-Encoding"
-        }
-      ]
-    },
-    {
-      "source": "/images/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=86400, s-maxage=2592000"
-        },
-        {
-          "key": "Vary",
-          "value": "Accept-Encoding, Accept"
         }
       ]
     },
@@ -123,33 +62,13 @@
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "public, max-age=60, s-maxage=300"
-        },
-        {
-          "key": "Vary",
-          "value": "Accept-Encoding, Authorization"
-        },
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, PUT, DELETE, OPTIONS"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization"
+          "value": "no-cache, no-store, must-revalidate"
         }
       ]
     },
     {
       "source": "/(.*)",
       "headers": [
-        {
-          "key": "X-Environment",
-          "value": "production"
-        },
         {
           "key": "X-Frame-Options",
           "value": "DENY"
@@ -163,20 +82,13 @@
           "value": "1; mode=block"
         },
         {
-          "key": "Referrer-Policy",
-          "value": "strict-origin-when-cross-origin"
-        },
-        {
-          "key": "Permissions-Policy",
-          "value": "camera=(), microphone=(), geolocation=()"
-        },
-        {
           "key": "Strict-Transport-Security",
           "value": "max-age=31536000; includeSubDomains"
         }
       ]
     }
   ],
+  
   "rewrites": [
     {
       "source": "/sitemap.xml",
@@ -191,55 +103,12 @@
       "destination": "/api/health"
     }
   ],
+  
   "redirects": [
     {
       "source": "/dashboard",
       "destination": "/projects",
       "permanent": true
-    },
-    {
-      "source": "/app/:path*",
-      "destination": "/:path*",
-      "permanent": true
-    },
-    {
-      "source": "/old-dashboard",
-      "destination": "/projects",
-      "permanent": true
     }
-  ],
-  
-  "env": {
-    "NODE_ENV": "production",
-    "NEXT_PUBLIC_SUPABASE_URL": "@supabase-url",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase-anon-key",
-    "SUPABASE_SERVICE_ROLE_KEY": "@supabase-service-role-key",
-    "OPENAI_API_KEY": "@openai-api-key",
-    "SERPER_API_KEY": "@serper-api-key",
-    "FIRECRAWL_API_KEY": "@firecrawl-api-key",
-    "JWT_SECRET": "@jwt-secret",
-    "SESSION_SECRET": "@session-secret",
-    "SENTRY_DSN": "@sentry-dsn",
-    "UPSTASH_REDIS_REST_URL": "@redis-url",
-    "UPSTASH_REDIS_REST_TOKEN": "@redis-token",
-    "NEXT_PUBLIC_SITE_URL": "@site-url"
-  },
-  
-  "trailingSlash": false,
-  "cleanUrls": true,
-  
-  "github": {
-    "enabled": true,
-    "autoAlias": true,
-    "autoJobCancelation": true
-  },
-  
-  "outputFileTracing": true,
-  "experimental": {
-    "optimizePackageImports": [
-      "@supabase/supabase-js",
-      "openai",
-      "@sentry/nextjs"
-    ]
-  }
+  ]
 }

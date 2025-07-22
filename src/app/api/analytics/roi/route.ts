@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
           user_id
         )
       `)
-      .eq('generated_content.user_id', authResult.user.id);
+      .eq('generated_content.user_id', user.id);
 
     // Apply filters
     if (validatedParams.content_id) {

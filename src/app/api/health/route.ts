@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { monitoringManager } from '@/lib/monitoring/production-monitoring-manager';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 interface HealthCheck {
   service: string;
