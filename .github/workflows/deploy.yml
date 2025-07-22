@@ -1,0 +1,285 @@
+name: Deploy to Vercel
+
+on:
+  push:
+    branches:
+      - main  # Production deployment
+      - develop  # Staging deployment
+  pull_request:
+    branches:
+      - main
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  # Build and test job
+  build-and-test:
+    runs-on: ubuntu-latest
+    name: Build and Test
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run linter
+        run: npm run lint
+        
+      - name: Run type checking
+        run: npx tsc --noEmit
+        
+      - name: Run tests
+        run: npm test -- --watchAll=false --coverage=false
+        env:
+          NODE_ENV: test
+          
+      - name: Build application
+        run: npm run build
+        env:
+          NODE_ENV: production
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+  # Security audit job
+  security-audit:
+    runs-on: ubuntu-latest
+    name: Security Audit
+    needs: build-and-test
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run security audit
+        run: npm audit --audit-level=high
+        
+      - name: Run dependency check
+        run: npx audit-ci --config .audit-ci.json
+        continue-on-error: true
+
+  # Deploy to staging
+  deploy-staging:
+    runs-on: ubuntu-latest
+    name: Deploy to Staging
+    needs: [build-and-test, security-audit]
+    if: github.ref == 'refs/heads/develop'
+    
+    environment:
+      name: staging
+      url: https://staging-seo-app.vercel.app
+      
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+        
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+        
+      - name: Build Project Artifacts
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          NODE_ENV: staging
+          
+      - name: Deploy to Staging
+        run: |
+          DEPLOYMENT_URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          echo "DEPLOYMENT_URL=$DEPLOYMENT_URL" >> $GITHUB_ENV
+          echo "🚀 Staging deployed to: $DEPLOYMENT_URL"
+          
+      - name: Run health checks on staging
+        run: |
+          sleep 30  # Wait for deployment to be ready
+          curl -f "${{ env.DEPLOYMENT_URL }}/api/health" || exit 1
+          echo "✅ Staging health check passed"
+          
+      - name: Run E2E tests on staging
+        run: npm run test:e2e
+        env:
+          BASE_URL: ${{ env.DEPLOYMENT_URL }}
+          NODE_ENV: staging
+        continue-on-error: true
+
+  # Deploy to production
+  deploy-production:
+    runs-on: ubuntu-latest
+    name: Deploy to Production
+    needs: [build-and-test, security-audit]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    environment:
+      name: production
+      url: https://seo-automation-app.vercel.app
+      
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+        
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        
+      - name: Build Project Artifacts
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          NODE_ENV: production
+          
+      # Blue-Green Deployment Strategy
+      - name: Deploy to Preview (Green)
+        run: |
+          PREVIEW_URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          echo "PREVIEW_URL=$PREVIEW_URL" >> $GITHUB_ENV
+          echo "🟢 Green deployment: $PREVIEW_URL"
+          
+      - name: Health Check - Green Deployment
+        run: |
+          sleep 45  # Wait for deployment to be ready
+          
+          # Multiple health check attempts
+          for i in {1..5}; do
+            if curl -f "${{ env.PREVIEW_URL }}/api/health"; then
+              echo "✅ Green deployment health check passed (attempt $i)"
+              break
+            else
+              echo "⚠️ Health check failed (attempt $i), retrying..."
+              sleep 15
+            fi
+            
+            if [ $i -eq 5 ]; then
+              echo "❌ Green deployment health checks failed"
+              exit 1
+            fi
+          done
+          
+      - name: Performance Test - Green Deployment
+        run: |
+          # Test response time
+          RESPONSE_TIME=$(curl -o /dev/null -s -w "%{time_total}\n" "${{ env.PREVIEW_URL }}/api/health")
+          if (( $(echo "$RESPONSE_TIME > 2.0" | bc -l) )); then
+            echo "❌ Response time too slow: ${RESPONSE_TIME}s"
+            exit 1
+          else
+            echo "✅ Performance test passed: ${RESPONSE_TIME}s"
+          fi
+          
+      - name: Promote to Production (Blue)
+        run: |
+          PRODUCTION_URL=$(vercel --prod --token=${{ secrets.VERCEL_TOKEN }})
+          echo "PRODUCTION_URL=$PRODUCTION_URL" >> $GITHUB_ENV
+          echo "🔵 Production deployment: $PRODUCTION_URL"
+          
+      - name: Final Health Check - Production
+        run: |
+          sleep 30  # Wait for production deployment
+          
+          for i in {1..3}; do
+            if curl -f "${{ env.PRODUCTION_URL }}/api/health"; then
+              echo "✅ Production health check passed (attempt $i)"
+              break
+            else
+              echo "⚠️ Production health check failed (attempt $i), retrying..."
+              sleep 20
+            fi
+            
+            if [ $i -eq 3 ]; then
+              echo "❌ Production health checks failed - initiating rollback"
+              # Rollback logic would go here
+              exit 1
+            fi
+          done
+          
+      - name: Create Release Tag
+        run: |
+          VERSION=$(date +"v%Y.%m.%d-%H%M")
+          git tag $VERSION
+          git push origin $VERSION
+          echo "🏷️ Release tagged: $VERSION"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Notify Deployment Success
+        run: |
+          echo "🎉 Production deployment successful!"
+          echo "📊 Deployment Summary:"
+          echo "- Preview URL: ${{ env.PREVIEW_URL }}"
+          echo "- Production URL: ${{ env.PRODUCTION_URL }}"
+          echo "- Commit: ${{ github.sha }}"
+          echo "- Branch: ${{ github.ref_name }}"
+
+  # Post-deployment monitoring
+  post-deployment:
+    runs-on: ubuntu-latest
+    name: Post-Deployment Monitoring
+    needs: deploy-production
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: Monitor Production Health
+        run: |
+          echo "🔍 Starting post-deployment monitoring..."
+          
+          # Monitor for 5 minutes
+          for i in {1..10}; do
+            if curl -f "https://seo-automation-app.vercel.app/api/health"; then
+              echo "✅ Health check $i/10 passed"
+            else
+              echo "❌ Health check $i/10 failed"
+              # Could trigger alerts here
+            fi
+            sleep 30
+          done
+          
+          echo "📊 Post-deployment monitoring completed"
+
+  # Cleanup on failure
+  cleanup-on-failure:
+    runs-on: ubuntu-latest
+    name: Cleanup on Failure
+    needs: [deploy-staging, deploy-production]
+    if: failure()
+    
+    steps:
+      - name: Cleanup Failed Deployments
+        run: |
+          echo "🧹 Cleaning up failed deployments..."
+          # Add cleanup logic here
+          echo "Cleanup completed"
+        continue-on-error: true

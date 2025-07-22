@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { STATIC_ASSET_CACHE_HEADERS, API_CACHE_HEADERS, NO_CACHE_HEADERS } from '@/lib/cache/edge-cache'
 import { checkRateLimit, getClientIP } from '@/lib/auth/rate-limiter'
+import { securityManager } from '@/lib/security/production-security-manager'
 
 // CORS configuration
 const ALLOWED_ORIGINS = [
@@ -20,6 +21,12 @@ const CORS_HEADERS = {
 }
 
 export async function middleware(req: NextRequest) {
+  // Apply production security middleware first
+  const securityResponse = await securityManager.applySecurityMiddleware(req);
+  if (securityResponse) {
+    return securityResponse;
+  }
+
   const origin = req.headers.get('origin')
   const isApiRoute = req.nextUrl.pathname.startsWith('/api/')
   
@@ -59,14 +66,11 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // Add security headers
-  response.headers.set('X-Frame-Options', 'DENY')
-  response.headers.set('X-Content-Type-Options', 'nosniff')
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
-  response.headers.set('X-XSS-Protection', '1; mode=block')
+  // Apply security headers from security manager
+  const securedResponse = securityManager.applySecurityHeaders(response);
   
   // Add performance headers
-  response.headers.set('X-DNS-Prefetch-Control', 'on')
+  securedResponse.headers.set('X-DNS-Prefetch-Control', 'on')
   
   // Rate limiting for authentication endpoints
   const clientIP = getClientIP(req);
@@ -105,13 +109,13 @@ export async function middleware(req: NextRequest) {
           rateLimitResponse.headers.set('Retry-After', rateLimitResult.retryAfter.toString());
         }
         
-        return rateLimitResponse;
+        return securityManager.applySecurityHeaders(rateLimitResponse);
       }
       
       // Add rate limit headers to successful requests
-      response.headers.set('X-RateLimit-Limit', '5');
-      response.headers.set('X-RateLimit-Remaining', rateLimitResult.remaining.toString());
-      response.headers.set('X-RateLimit-Reset', rateLimitResult.resetTime.toString());
+      securedResponse.headers.set('X-RateLimit-Limit', '5');
+      securedResponse.headers.set('X-RateLimit-Remaining', rateLimitResult.remaining.toString());
+      securedResponse.headers.set('X-RateLimit-Reset', rateLimitResult.resetTime.toString());
       break;
     }
   }
@@ -121,9 +125,9 @@ export async function middleware(req: NextRequest) {
       req.nextUrl.pathname.startsWith('/static/') ||
       req.nextUrl.pathname.match(/\.(ico|png|jpg|jpeg|svg|webp|gif|js|css|woff|woff2|ttf|eot)$/)) {
     Object.entries(STATIC_ASSET_CACHE_HEADERS).forEach(([key, value]) => {
-      response.headers.set(key, value)
+      securedResponse.headers.set(key, value)
     })
-    return response
+    return securedResponse
   }
   
   // Handle API routes caching
@@ -133,16 +137,16 @@ export async function middleware(req: NextRequest) {
         req.nextUrl.pathname.includes('/user/') ||
         req.nextUrl.pathname.includes('/dashboard/')) {
       Object.entries(NO_CACHE_HEADERS).forEach(([key, value]) => {
-        response.headers.set(key, value)
+        securedResponse.headers.set(key, value)
       })
     } else {
       Object.entries(API_CACHE_HEADERS).forEach(([key, value]) => {
-        response.headers.set(key, value)
+        securedResponse.headers.set(key, value)
       })
     }
   }
   
-  const supabaseResponse = response
+  const supabaseResponse = securedResponse
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

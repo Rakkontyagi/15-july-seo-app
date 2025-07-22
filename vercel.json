@@ -1,58 +1,148 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
-  "builds": [
-    {
-      "src": "next.config.ts",
-      "use": "@vercel/next"
+  "name": "seo-automation-app",
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "installCommand": "npm ci",
+  
+  "build": {
+    "env": {
+      "NODE_OPTIONS": "--max-old-space-size=4096",
+      "NEXT_TELEMETRY_DISABLED": "1"
     }
-  ],
+  },
+  
   "functions": {
     "src/app/api/content/generate/route.ts": {
+      "runtime": "nodejs18.x",
       "maxDuration": 300,
-      "memory": 3008
+      "memory": 3008,
+      "regions": ["iad1", "pdx1", "lhr1"]
     },
     "src/app/api/content/bulk/route.ts": {
+      "runtime": "nodejs18.x",
       "maxDuration": 600,
-      "memory": 3008
+      "memory": 3008,
+      "regions": ["iad1", "pdx1", "lhr1"]
     },
     "src/app/api/cms/publish/route.ts": {
+      "runtime": "nodejs18.x",
       "maxDuration": 120,
       "memory": 1024
     },
     "src/app/api/cms/test/route.ts": {
+      "runtime": "nodejs18.x",
       "maxDuration": 30,
       "memory": 512
     },
     "src/app/api/serp/analyze/route.ts": {
+      "runtime": "nodejs18.x",
       "maxDuration": 60,
-      "memory": 1024
+      "memory": 1024,
+      "regions": ["iad1", "pdx1", "lhr1", "fra1"]
     },
     "src/app/api/content/scrape/route.ts": {
+      "runtime": "nodejs18.x",
       "maxDuration": 120,
       "memory": 1024
     },
     "src/app/api/ai/generate/route.ts": {
+      "runtime": "nodejs18.x",
       "maxDuration": 180,
       "memory": 1024
     },
     "src/app/api/health/route.ts": {
-      "maxDuration": 10
+      "runtime": "edge",
+      "maxDuration": 10,
+      "memory": 128
     },
     "src/app/api/metrics/route.ts": {
-      "maxDuration": 10
+      "runtime": "nodejs18.x",
+      "maxDuration": 10,
+      "memory": 256
+    },
+    "src/app/api/projects/*/route.ts": {
+      "runtime": "nodejs18.x",
+      "memory": 512,
+      "maxDuration": 30
+    },
+    "src/app/api/auth/*/route.ts": {
+      "runtime": "nodejs18.x",
+      "memory": 256,
+      "maxDuration": 15
     }
   },
-  "regions": ["iad1", "sfo1"],
-  "buildCommand": "npm run build",
-  "installCommand": "npm install --legacy-peer-deps",
-  "framework": "nextjs",
+  
+  "regions": ["iad1", "pdx1", "lhr1", "fra1", "sin1", "nrt1"],
+  
   "crons": [
     {
-      "path": "/api/health",
-      "schedule": "0 */5 * * *"
+      "path": "/api/cron/health-check",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/cleanup",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/metrics",
+      "schedule": "*/15 * * * *"
     }
   ],
   "headers": [
+    {
+      "source": "/_next/static/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        },
+        {
+          "key": "Vary",
+          "value": "Accept-Encoding"
+        }
+      ]
+    },
+    {
+      "source": "/images/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, s-maxage=2592000"
+        },
+        {
+          "key": "Vary",
+          "value": "Accept-Encoding, Accept"
+        }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=60, s-maxage=300"
+        },
+        {
+          "key": "Vary",
+          "value": "Accept-Encoding, Authorization"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        }
+      ]
+    },
     {
       "source": "/(.*)",
       "headers": [
@@ -79,42 +169,77 @@
         {
           "key": "Permissions-Policy",
           "value": "camera=(), microphone=(), geolocation=()"
-        }
-      ]
-    },
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
         },
         {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, PUT, DELETE, OPTIONS"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization"
+          "key": "Strict-Transport-Security",
+          "value": "max-age=31536000; includeSubDomains"
         }
       ]
     }
   ],
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap"
+    },
+    {
+      "source": "/robots.txt",
+      "destination": "/api/robots"
+    },
+    {
+      "source": "/health",
+      "destination": "/api/health"
     }
   ],
+  "redirects": [
+    {
+      "source": "/dashboard",
+      "destination": "/projects",
+      "permanent": true
+    },
+    {
+      "source": "/app/:path*",
+      "destination": "/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/old-dashboard",
+      "destination": "/projects",
+      "permanent": true
+    }
+  ],
+  
   "env": {
+    "NODE_ENV": "production",
     "NEXT_PUBLIC_SUPABASE_URL": "@supabase-url",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase-anon-key",
     "SUPABASE_SERVICE_ROLE_KEY": "@supabase-service-role-key",
     "OPENAI_API_KEY": "@openai-api-key",
-    "ANTHROPIC_API_KEY": "@anthropic-api-key",
     "SERPER_API_KEY": "@serper-api-key",
     "FIRECRAWL_API_KEY": "@firecrawl-api-key",
-    "NEXTAUTH_SECRET": "@nextauth-secret",
+    "JWT_SECRET": "@jwt-secret",
+    "SESSION_SECRET": "@session-secret",
+    "SENTRY_DSN": "@sentry-dsn",
+    "UPSTASH_REDIS_REST_URL": "@redis-url",
+    "UPSTASH_REDIS_REST_TOKEN": "@redis-token",
     "NEXT_PUBLIC_SITE_URL": "@site-url"
+  },
+  
+  "trailingSlash": false,
+  "cleanUrls": true,
+  
+  "github": {
+    "enabled": true,
+    "autoAlias": true,
+    "autoJobCancelation": true
+  },
+  
+  "outputFileTracing": true,
+  "experimental": {
+    "optimizePackageImports": [
+      "@supabase/supabase-js",
+      "openai",
+      "@sentry/nextjs"
+    ]
   }
 }

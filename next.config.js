@@ -1,79 +1,149 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Production-ready config with CDN optimization
+  
+  // TypeScript and ESLint
   typescript: {
-    // Dangerously allow production builds to successfully complete even if
-    // your project has type errors.
-    ignoreBuildErrors: false,
+    ignoreBuildErrors: process.env.NODE_ENV === 'development',
   },
   eslint: {
-    // Temporarily ignore ESLint during builds to focus on TypeScript errors
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: process.env.NODE_ENV === 'development',
   },
-  images: {
-    domains: ['localhost'],
-    unoptimized: true,
+
+  // Performance optimizations
+  swcMinify: true,
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
   },
-  env: {
-    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
-    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-    SERPER_API_KEY: process.env.SERPER_API_KEY,
-    FIRECRAWL_API_KEY: process.env.FIRECRAWL_API_KEY,
-  },
-  // Enable webpack 5 features
-  webpack: (config) => {
-    // Important: return the modified config
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      fs: false,
-      net: false,
-      tls: false,
-    };
+  
+  // Advanced webpack config for CDN optimization
+  webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
+    // Production optimizations
+    if (!dev) {
+      config.devtool = false;
+      
+      // Advanced code splitting
+      config.optimization.splitChunks = {
+        chunks: 'all',
+        cacheGroups: {
+          default: {
+            minChunks: 2,
+            priority: -20,
+            reuseExistingChunk: true,
+          },
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendors',
+            priority: -10,
+            chunks: 'all',
+          },
+          // CDN-optimized chunks
+          cdn: {
+            test: /[\\/](images|fonts|icons)[\\/]/,
+            name: 'cdn-assets',
+            priority: 10,
+            chunks: 'all',
+          },
+        },
+      };
+    }
+    
+    // Optimize module resolution
+    config.resolve.symlinks = false;
+    config.resolve.modules = ['node_modules'];
+    
+    // Skip heavy libraries in client bundle
+    if (!isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        '@sentry/node': false,
+        '@opentelemetry/instrumentation': false,
+      };
+    }
     
     return config;
   },
-  // Performance optimizations
+
+  // Image optimization for CDN
+  images: {
+    domains: [
+      'localhost',
+      'images.unsplash.com',
+      'via.placeholder.com',
+      'picsum.photos',
+      'res.cloudinary.com',
+    ],
+    formats: ['image/webp', 'image/avif'],
+    deviceSizes: [320, 640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    minimumCacheTTL: 86400, // 24 hours
+    dangerouslyAllowSVG: false,
+  },
+
+  // Headers for CDN optimization
+  headers: async () => [
+    {
+      source: '/_next/static/(.*)',
+      headers: [
+        {
+          key: 'Cache-Control',
+          value: 'public, max-age=31536000, immutable',
+        },
+      ],
+    },
+    {
+      source: '/images/(.*)',
+      headers: [
+        {
+          key: 'Cache-Control',
+          value: 'public, max-age=86400, s-maxage=2592000',
+        },
+      ],
+    },
+    {
+      source: '/(.*)',
+      headers: [
+        {
+          key: 'X-Frame-Options',
+          value: 'DENY',
+        },
+        {
+          key: 'X-Content-Type-Options',
+          value: 'nosniff',
+        },
+        {
+          key: 'Referrer-Policy',
+          value: 'strict-origin-when-cross-origin',
+        },
+      ],
+    },
+  ],
+
+  // Rewrites for CDN
+  rewrites: async () => [
+    {
+      source: '/sitemap.xml',
+      destination: '/api/sitemap',
+    },
+    {
+      source: '/robots.txt',
+      destination: '/api/robots',
+    },
+  ],
+
+  // Production optimizations
   compress: true,
   poweredByHeader: false,
-  generateEtags: false,
+  productionBrowserSourceMaps: false,
   
-  // Security headers
-  async headers() {
-    return [
-      {
-        source: '/(.*)',
-        headers: [
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin',
-          },
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block',
-          },
-        ],
-      },
-    ];
-  },
+  // Output configuration
+  output: 'standalone',
+  generateEtags: true,
   
-  // Redirects for SEO
-  async redirects() {
-    return [
-      {
-        source: '/home',
-        destination: '/',
-        permanent: true,
-      },
-    ];
+  // Experimental features for better performance
+  experimental: {
+    optimizePackageImports: ['@/lib', '@/components'],
+    serverComponentsExternalPackages: ['sharp'],
   },
 };
 
